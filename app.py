@@ -31,13 +31,16 @@ st.markdown(get_julius_baer_css(), unsafe_allow_html=True)
 
 # Initialize Backend Singletons
 @st.cache_resource
-def init_data_services():
-    repo = WealthDataRepository.get_instance()
-    analytics = DeterministicAnalytics(repo)
-    vector_store = WealthVectorStore.get_instance()
-    return repo, analytics, vector_store
+def get_data_repo():
+    return WealthDataRepository.get_instance()
 
-repo, analytics, vector_store = init_data_services()
+@st.cache_resource
+def get_vector_store():
+    return WealthVectorStore.get_instance()
+
+repo = get_data_repo()
+vector_store = get_vector_store()
+analytics = DeterministicAnalytics(repo)
 llm_engine = LLMEngine.get_instance()
 orchestrator = ClientOrchestrator(analytics)
 prioritizer = BookPrioritizer(orchestrator)

@@ -535,7 +535,10 @@ class MarketImpactAgent(BaseLLMAgent):
     def run(self, context: Dict[str, Any], snapshot_date: str) -> List[Recommendation]:
         client_id = context["client_id"]
         last_meeting_date = context.get("last_meeting_date")
-        matches = self.analytics.match_events_to_holdings(client_id, snapshot_date, since_date=last_meeting_date)
+        try:
+            matches = self.analytics.match_events_to_holdings(client_id, snapshot_date, since_date=last_meeting_date)
+        except TypeError:
+            matches = self.analytics.match_events_to_holdings(client_id, snapshot_date)
 
         system_prompt = f"""You are the Global Macro & Event Risk Strategist at Bank Julius Baer.
 Correlate world market events occurring since the client's last RM interaction ({last_meeting_date or 'recent baseline'}) with specific client holdings and transmission channels.

@@ -514,7 +514,8 @@ class DeterministicAnalytics:
         self, 
         client_id: str, 
         snapshot_date: str = "2026-08-26",
-        since_date: Optional[str] = None
+        since_date: Optional[str] = None,
+        **kwargs
     ) -> List[Dict[str, Any]]:
         """
         Correlates world events with the client's holdings by region, sector, and transmission channel.
