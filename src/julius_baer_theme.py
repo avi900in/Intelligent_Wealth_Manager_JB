@@ -232,21 +232,30 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Tabs & Sidebar styling */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 1.5rem;
-    border-bottom: 1px solid var(--jb-border-subtle);
+    gap: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1.5px solid var(--jb-border-subtle);
     padding-bottom: 0.25rem;
+    width: 100%;
 }
 
 .stTabs [data-baseweb="tab"] {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 600;
     color: var(--jb-text-muted);
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0.6rem;
+    white-space: nowrap;
+    flex: 1;
+    text-align: center;
+    justify-content: center;
 }
 
 .stTabs [aria-selected="true"] {
     color: var(--jb-gold-primary) !important;
-    border-bottom: 2px solid var(--jb-gold-primary) !important;
+    border-bottom: 2.5px solid var(--jb-gold-primary) !important;
+    background: rgba(197, 168, 128, 0.06);
+    border-radius: 4px 4px 0 0;
 }
 
 /* Streamlit buttons */

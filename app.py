@@ -527,11 +527,11 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # Main Application Tabs
 tab_queue, tab_client360, tab_actions, tab_pack, tab_vector = st.tabs([
-    "📋 Morning Call Queue (Ranked Book)",
-    "👤 Client 360 & Multi-Portfolio Intelligence",
-    "⚡ Agent Action Deck (RM in Control)",
-    "📄 Client Meeting Pack & Email Generator",
-    "🧠 Semantic Knowledge Navigator"
+    "📋 Morning Call Queue",
+    "👤 Client 360",
+    "⚡ Agent Action Deck",
+    "📄 Client Meeting Pack",
+    "🧠 Semantic Navigator"
 ])
 
 # ---------------------------------------------------------
