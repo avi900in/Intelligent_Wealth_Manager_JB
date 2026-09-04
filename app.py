@@ -879,12 +879,14 @@ with tab_actions:
 
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, rgba(8,20,38,0.95) 0%, rgba(13,30,54,0.95) 100%); border: 1.5px solid rgba(197,168,128,0.35); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem; margin-bottom: 1rem;">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <span style="font-size: 1.05rem; font-weight: 700; color: #FFFFFF;">🎯 Morning Call Urgency Provenance & Risk Mitigation Simulator</span>
-                <span class="jb-badge jb-badge-rule">Rank #{rank_in_book} of {total_in_book} in Queue</span>
+        <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem; margin-bottom: 1rem; gap: 0.5rem;">
+            <div style="font-size: 1.02rem; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🎯 Morning Call Urgency Provenance & Risk Mitigation Simulator</span>
             </div>
-            <div style="font-size: 0.8rem; color: #C5A880; font-family: monospace;">{target_cid} • {temporal_str}</div>
+            <div style="text-align: center; white-space: nowrap;">
+                <span class="jb-badge jb-badge-rule" style="font-size: 0.82rem; padding: 0.35rem 0.85rem; border: 1px solid #C5A880; font-weight: 600;">Rank #{rank_in_book} of {total_in_book} in Queue</span>
+            </div>
+            <div style="font-size: 0.8rem; color: #C5A880; font-family: monospace; text-align: right;">{target_cid} • {temporal_str}</div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
             <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 1rem;">
