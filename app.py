@@ -160,11 +160,18 @@ with st.sidebar:
     st.caption("• RM notes act as active standing overrides.")
     st.caption("• Full 1-click audit trail for every recommendation.")
 
+# Dynamic Desk Name formatting for Executive Header
+if "All Booking Desks" in desk_filter:
+    active_desk_title = "Asia Desk (Singapore & Hong Kong)"
+else:
+    base_desk = desk_filter.split("(")[0].strip()
+    active_desk_title = f"{base_desk} Desk" if not base_desk.endswith("Desk") and not base_desk.endswith("Centre") else (f"{base_desk} Desk" if not base_desk.endswith("Desk") else base_desk)
+
 # Top Julius Baer Executive Header with Priscilla Ong in the Top Left Corner
 st.markdown(render_jb_header(
     rm_name=st.session_state.logged_in_user,
     rm_id=st.session_state.logged_in_rm_id,
-    desk=st.session_state.logged_in_desk
+    desk=active_desk_title
 ), unsafe_allow_html=True)
 
 # Run Book Prioritization across all 20 clients
