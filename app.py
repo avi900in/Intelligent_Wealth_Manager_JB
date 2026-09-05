@@ -46,6 +46,43 @@ llm_engine = LLMEngine.get_instance()
 orchestrator = ClientOrchestrator(analytics)
 prioritizer = BookPrioritizer(orchestrator)
 
+# Private Banking RM Coverage Profiles for Row-Level Security (RLS) & Multi-RM Simulation
+RM_PROFILES = {
+    "RM-SG-014": {
+        "name": "Priscilla Ong",
+        "rm_id": "RM-SG-014",
+        "desk": "Asia Desk (Singapore & Hong Kong)",
+        "label": "Priscilla Ong (RM-SG-014) — Senior Partner (Asia Book: 20 Clients)",
+        "role": "Assigned Senior RM",
+        "accessible": True,
+        "notes": "Full mandate clearance for Singapore and Hong Kong booking centres."
+    },
+    "RM-ZH-002": {
+        "name": "Christian Weber",
+        "rm_id": "RM-ZH-002",
+        "desk": "Swiss & European Private Banking Desk (Zurich)",
+        "label": "Christian Weber (RM-ZH-002) — Exec Director (Swiss Desk: 0 Asia Clients)",
+        "role": "Unassigned RM (Cross-Desk Restricted)",
+        "accessible": False,
+        "notes": "Coverage restricted to Swiss/European booking centres. Zero Asia dossiers assigned."
+    },
+    "DH-SG-001": {
+        "name": "Marc Guggenheim",
+        "rm_id": "DH-SG-001",
+        "desk": "Global Wealth Management Supervisory Desk",
+        "label": "Marc Guggenheim (DH-SG-001) — Supervisory Desk Head (Full Oversight)",
+        "role": "Supervisory Desk Head",
+        "accessible": True,
+        "notes": "Full supervisory audit and compliance oversight across all regional booking centres."
+    }
+}
+
+def format_client_display_name(cname: str, cid: str) -> str:
+    """Masks client name if Zero-PII Presentation Mode is active."""
+    if st.session_state.get("privacy_mode", False):
+        return f"Client {cid} (Protected)"
+    return cname
+
 # Session State Initialization for Authentication & Actions
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -54,7 +91,9 @@ if "logged_in_user" not in st.session_state:
 if "logged_in_rm_id" not in st.session_state:
     st.session_state.logged_in_rm_id = "RM-SG-014"
 if "logged_in_desk" not in st.session_state:
-    st.session_state.logged_in_desk = "Singapore Ultra HNW Desk"
+    st.session_state.logged_in_desk = "Asia Desk (Singapore & Hong Kong)"
+if "privacy_mode" not in st.session_state:
+    st.session_state.privacy_mode = False
 if "selected_client_id" not in st.session_state:
     st.session_state.selected_client_id = "CL-0001"
 if "approved_actions" not in st.session_state:
@@ -95,8 +134,15 @@ if not st.session_state.authenticated:
                 if user_input.strip():
                     st.session_state.authenticated = True
                     st.session_state.logged_in_user = user_input.strip()
-                    st.session_state.logged_in_rm_id = "RM-SG-014" if "priscilla" in user_input.lower() else "RM-AUTH"
-                    st.session_state.logged_in_desk = "Singapore Ultra HNW Desk"
+                    if "weber" in user_input.lower() or "christian" in user_input.lower():
+                        st.session_state.logged_in_rm_id = "RM-ZH-002"
+                        st.session_state.logged_in_desk = "Swiss & European Private Banking Desk (Zurich)"
+                    elif "guggenheim" in user_input.lower() or "marc" in user_input.lower():
+                        st.session_state.logged_in_rm_id = "DH-SG-001"
+                        st.session_state.logged_in_desk = "Global Wealth Management Supervisory Desk"
+                    else:
+                        st.session_state.logged_in_rm_id = "RM-SG-014"
+                        st.session_state.logged_in_desk = "Asia Desk (Singapore & Hong Kong)"
                     st.success(f"Welcome, {st.session_state.logged_in_user}!")
                     st.rerun()
                 else:
@@ -109,17 +155,55 @@ if not st.session_state.authenticated:
 
 # Sidebar: Controls, Active User Profile & Desk Filters
 with st.sidebar:
+    st.markdown("### 🔐 RM Identity & Coverage Scope")
+    
+    current_rm_id = st.session_state.get("logged_in_rm_id", "RM-SG-014")
+    rm_keys = list(RM_PROFILES.keys())
+    active_rm_idx = rm_keys.index(current_rm_id) if current_rm_id in rm_keys else 0
+    
+    selected_rm_key = st.selectbox(
+        "Active RM Coverage Profile",
+        options=rm_keys,
+        format_func=lambda k: RM_PROFILES[k]["label"],
+        index=active_rm_idx,
+        help="Simulate Private Banking Row-Level Security (RLS), coverage segregation, and supervisor audit modes."
+    )
+    
+    if selected_rm_key != current_rm_id:
+        st.session_state.logged_in_rm_id = selected_rm_key
+        st.session_state.logged_in_user = RM_PROFILES[selected_rm_key]["name"]
+        st.session_state.logged_in_desk = RM_PROFILES[selected_rm_key]["desk"]
+        st.rerun()
+
+    active_rm_info = RM_PROFILES.get(selected_rm_key, RM_PROFILES["RM-SG-014"])
+    role_badge_class = "jb-badge-fact" if selected_rm_key == "DH-SG-001" else ("jb-badge-high" if not active_rm_info["accessible"] else "jb-badge-low")
+    
     st.markdown(f"""
-    <div style="background: rgba(197, 168, 128, 0.12); border: 1px solid rgba(197, 168, 128, 0.3); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem;">
-        <div style="font-size: 0.72rem; color: #C5A880; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em;">Active Relationship Manager</div>
+    <div style="background: rgba(197, 168, 128, 0.12); border: 1px solid rgba(197, 168, 128, 0.3); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+        <div style="font-size: 0.72rem; color: #C5A880; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em;">Active Coverage Profile</div>
         <div style="font-size: 1.05rem; font-weight: 700; color: #FFFFFF; margin-top: 0.2rem;">👤 {st.session_state.logged_in_user}</div>
         <div style="font-size: 0.78rem; color: #94A3B8;">{st.session_state.logged_in_rm_id} • {st.session_state.logged_in_desk}</div>
+        <div style="margin-top: 0.4rem;"><span class="jb-badge {role_badge_class}" style="font-size: 0.7rem;">{active_rm_info['role']}</span></div>
     </div>
     """, unsafe_allow_html=True)
 
     if st.button("🚪 Sign Out", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 🛡️ Client Privacy & Presentation Mode")
+    privacy_toggle = st.toggle(
+        "🛡️ Zero-PII Presentation Mode",
+        value=st.session_state.get("privacy_mode", False),
+        help="Mask all client names, account IDs, and sensitive identifiers across all views for secure screen-sharing with clients or external audits."
+    )
+    if privacy_toggle != st.session_state.get("privacy_mode", False):
+        st.session_state.privacy_mode = privacy_toggle
+        st.rerun()
+
+    if st.session_state.get("privacy_mode", False):
+        st.markdown('<div style="background: rgba(46, 204, 113, 0.15); border: 1px solid #2ECC71; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.78rem; color: #2ECC71; font-weight: 600; margin-bottom: 0.75rem;">🔒 Presentation Privacy Active: All Client PII Masked</div>', unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("### 🏛️ RM Workspace Controls")
@@ -157,6 +241,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 🛡️ Compliance & Governance")
+    st.caption("• Row-Level Security (RLS) & Cross-RM Data Isolation.")
     st.caption("• Deterministic facts isolated from LLM synthesis.")
     st.caption("• RM notes act as active standing overrides.")
     st.caption("• Full 1-click audit trail for every recommendation.")
@@ -168,12 +253,38 @@ else:
     base_desk = desk_filter.split("(")[0].strip()
     active_desk_title = f"{base_desk} Desk" if not base_desk.endswith("Desk") and not base_desk.endswith("Centre") else (f"{base_desk} Desk" if not base_desk.endswith("Desk") else base_desk)
 
-# Top Julius Baer Executive Header with Priscilla Ong in the Top Left Corner
+# Top Julius Baer Executive Header with RM Name and Desk
 st.markdown(render_jb_header(
     rm_name=st.session_state.logged_in_user,
     rm_id=st.session_state.logged_in_rm_id,
-    desk=active_desk_title
+    desk=active_desk_title if active_rm_info["accessible"] else active_rm_info["desk"]
 ), unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# ROW-LEVEL SECURITY (RLS) ACCESS CLEARANCE CHECK
+# ---------------------------------------------------------
+if not active_rm_info.get("accessible", True):
+    st.markdown("""
+    <div style="background: rgba(220, 38, 38, 0.08); border: 1.5px solid rgba(220, 38, 38, 0.4); border-radius: 12px; padding: 2.5rem; margin: 2rem 0; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+        <div style="font-size: 3rem; margin-bottom: 0.75rem;">🔒</div>
+        <div style="font-size: 1.4rem; font-weight: 700; color: #FF7675; margin-bottom: 0.6rem; letter-spacing: 0.02em;">Bank Julius Baer Confidentiality & Row-Level Data Isolation Enforced</div>
+        <div style="font-size: 0.98rem; color: #E2E8F0; max-width: 700px; margin: 0 auto 1.25rem auto; line-height: 1.6;">
+            You are currently authenticated as <strong>Christian Weber (RM-ZH-002 — Swiss & European Private Banking Desk)</strong>.<br>
+            Under Julius Baer Data Protection Policy (PB-SEC-402) and Swiss Banking Secrecy regulations, Relationship Managers are strictly isolated to their assigned client coverage book. You do not have mandate clearance to view client dossiers, portfolio asset allocations, mandate breaches, credit facilities, or call queues assigned to <strong>Priscilla Ong (RM-SG-014)</strong>.
+        </div>
+        <div style="display: inline-flex; gap: 1rem; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.75rem 1.25rem; font-size: 0.85rem; color: #94A3B8;">
+            <span>Assigned Dossiers: <strong style="color: #FF7675;">0 Asia Clients</strong></span>
+            <span>•</span>
+            <span>Mandate Booking Centre: <strong style="color: #FFF;">Zurich & Geneva</strong></span>
+            <span>•</span>
+            <span>Access Policy: <strong style="color: #55EFC4;">RLS Block Active</strong></span>
+        </div>
+        <div style="font-size: 0.85rem; color: #C5A880; margin-top: 1.5rem;">
+            💡 <em>To view the Asia Wealth Intelligence Cockpit, switch to <strong>Priscilla Ong (RM-SG-014)</strong> or <strong>Marc Guggenheim (DH-SG-001 — Supervisory Desk Head)</strong> using the sidebar profile switcher.</em>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.stop()
 
 # Run Book Prioritization across all 20 clients
 ranked_book = prioritizer.get_ranked_book(snapshot_date=selected_snapshot)
@@ -200,7 +311,7 @@ if st.session_state.selected_client_id not in filtered_cids and filtered_book:
     st.session_state.selected_client_id = filtered_book[0]["client_id"]
 
 client_dropdown_list = filtered_book if filtered_book else ranked_book
-client_dropdown_labels = [f"{b['client_id']} — {b['client_name']}" for b in client_dropdown_list]
+client_dropdown_labels = [f"{b['client_id']} — {format_client_display_name(b['client_name'], b['client_id'])}" for b in client_dropdown_list]
 client_id_list = [b["client_id"] for b in client_dropdown_list]
 
 def render_client_switcher(key_suffix: str):
@@ -271,7 +382,7 @@ def show_breaches_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
     df_b = pd.DataFrame([
         {
             "client_id": b["client_id"],
-            "client_name": b["client_name"],
+            "client_name": format_client_display_name(b["client_name"], b["client_id"]),
             "portfolio_id": b["portfolio_id"],
             "portfolio_name": b["portfolio_name"],
             "category": b["category"],
@@ -318,7 +429,7 @@ def show_breaches_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
     with b_pick_col1:
         sel_client = st.selectbox(
             "Or pick client directly to open in Client 360 & Action Deck",
-            options=sorted(list(set(f"{b['client_id']} — {b['client_name']}" for b in all_breaches))),
+            options=sorted(list(set(f"{b['client_id']} — {format_client_display_name(b['client_name'], b['client_id'])}" for b in all_breaches))),
             key="sel_client_from_breaches_dialog"
         )
     with b_pick_col2:
@@ -345,7 +456,7 @@ def show_ltv_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
     df_ltv = pd.DataFrame([
         {
             "client_id": a["client_id"],
-            "client_name": a["client_name"],
+            "client_name": format_client_display_name(a["client_name"], a["client_id"]),
             "facility_id": a["facility_id"],
             "drawn_loan_usd": f"${a['drawn_loan_usd']:,.0f}",
             "collateral_value_usd": f"${a['collateral_value_usd']:,.0f}",
@@ -391,7 +502,7 @@ def show_ltv_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
     with l_pick_col1:
         sel_ltv_client = st.selectbox(
             "Or pick client to open dossier",
-            options=sorted(list(set(f"{a['client_id']} — {a['client_name']}" for a in all_alerts))),
+            options=sorted(list(set(f"{a['client_id']} — {format_client_display_name(a['client_name'], a['client_id'])}" for a in all_alerts))),
             key="sel_client_from_ltv_dialog"
         )
     with l_pick_col2:
@@ -444,7 +555,7 @@ def show_liquidity_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
     df_liq = pd.DataFrame([
         {
             "client_id": d["client_id"],
-            "client_name": d["client_name"],
+            "client_name": format_client_display_name(d["client_name"], d["client_id"]),
             "total_liquid_pool_usd": f"${d['total_liquid_pool_usd']:,.0f}",
             "total_outflows_expected_usd": f"${d['total_outflows_expected_usd']:,.0f}",
             "net_surplus_deficit_usd": f"-${abs(d['net_surplus_deficit_usd']):,.0f}" if d["net_surplus_deficit_usd"] < 0 else f"${d['net_surplus_deficit_usd']:,.0f}",
@@ -487,7 +598,7 @@ def show_liquidity_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
     with liq_pick_col1:
         sel_liq_client = st.selectbox(
             "Or pick client with liquidity obligations to open dossier",
-            options=sorted(list(set(f"{d['client_id']} — {d['client_name']}" for d in all_deficits))),
+            options=sorted(list(set(f"{d['client_id']} — {format_client_display_name(d['client_name'], d['client_id'])}" for d in all_deficits))),
             key="sel_client_from_liq_dialog"
         )
     with liq_pick_col2:
@@ -614,7 +725,13 @@ with tab_queue:
     display_book = filtered_book
     if search_query:
         sq = search_query.lower()
-        display_book = [b for b in display_book if sq in b["client_name"].lower() or sq in b["client_id"].lower() or sq in str(b.get("wealth_band", "")).lower()]
+        display_book = [
+            b for b in display_book 
+            if sq in b["client_name"].lower() 
+            or sq in format_client_display_name(b["client_name"], b["client_id"]).lower() 
+            or sq in b["client_id"].lower() 
+            or sq in str(b.get("wealth_band", "")).lower()
+        ]
 
     if urgency_filter == "Portfolios with Mandate Breaches":
         display_book = [b for b in display_book if b["has_drift_alert"]]
@@ -631,7 +748,7 @@ with tab_queue:
 
     for item in display_book:
         cid = html.escape(str(item["client_id"]))
-        cname = html.escape(str(item["client_name"]))
+        cname = html.escape(format_client_display_name(str(item["client_name"]), str(item["client_id"])))
         score = item["urgency_score"]
         aum = item["total_aum_usd"]
         risk = html.escape(str(item["risk_profile"]))
@@ -697,7 +814,8 @@ with tab_client360:
             else:
                 age_str = f"🏛️ Entity: <strong style='color: #FFF;'>{client.get('life_stage', 'Family Office')}</strong>"
 
-            st.markdown(f"## 👤 {client['client_name']} ({target_cid})")
+            disp_client_name = format_client_display_name(client['client_name'], target_cid)
+            st.markdown(f"## 👤 {disp_client_name} ({target_cid})")
             st.markdown(f"""
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.88rem; color: #94A3B8;">
                 <div>{age_str}</div>
@@ -1254,10 +1372,11 @@ with tab_pack:
         lang = client.get("reporting_language", "English")
 
         # Generate Formal Document Content
+        disp_client_name = format_client_display_name(client['client_name'], client['client_id'])
         pack_content = f"""**CONFIDENTIAL — BANK JULIUS BAER & CO. LTD.**
 **PORTFOLIO INTELLIGENCE & ADVISORY BRIEFING**
 
-**Client:** {client['client_name']} ({client['client_id']})
+**Client:** {disp_client_name} ({client['client_id']})
 **Date:** {datetime.now().strftime('%d %B %Y')} | Valuation Snapshot: {selected_snapshot}
 **Relationship Manager:** {client.get('rm_name', 'Private Banking Desk')} ({client.get('rm_desk')})
 **Booking Centre:** {client.get('booking_centre')} | Tax Domicile: {client.get('tax_domicile')}
@@ -1266,7 +1385,7 @@ with tab_pack:
 ---
 
 ### 1. Executive Portfolio Context
-Dear {client['client_name']},
+Dear {disp_client_name},
 
 As part of Bank Julius Baer's continuous portfolio stewardship, we have reviewed your asset allocations, credit facilities, and liquidity provisions across your mandates.
 """
