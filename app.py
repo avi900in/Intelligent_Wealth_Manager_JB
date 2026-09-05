@@ -55,7 +55,8 @@ RM_PROFILES = {
         "label": "Priscilla Ong (RM-SG-014) — Senior Partner (Asia Book: 20 Clients)",
         "role": "Assigned Senior RM",
         "accessible": True,
-        "notes": "Full mandate clearance for Singapore and Hong Kong booking centres."
+        "can_approve": True,
+        "notes": "Full commercial signing and trade approval authority for Singapore and Hong Kong booking centres."
     },
     "RM-ZH-002": {
         "name": "Christian Weber",
@@ -64,16 +65,18 @@ RM_PROFILES = {
         "label": "Christian Weber (RM-ZH-002) — Exec Director (Swiss Desk: 0 Asia Clients)",
         "role": "Unassigned RM (Cross-Desk Restricted)",
         "accessible": False,
+        "can_approve": False,
         "notes": "Coverage restricted to Swiss/European booking centres. Zero Asia dossiers assigned."
     },
     "DH-SG-001": {
         "name": "Marc Guggenheim",
         "rm_id": "DH-SG-001",
         "desk": "Global Wealth Management Supervisory Desk",
-        "label": "Marc Guggenheim (DH-SG-001) — Supervisory Desk Head (Full Oversight)",
-        "role": "Supervisory Desk Head",
+        "label": "Marc Guggenheim (DH-SG-001) — Supervisory Desk Head (Audit Mode — Read Only)",
+        "role": "Supervisory Desk Head (Read-Only Audit)",
         "accessible": True,
-        "notes": "Full supervisory audit and compliance oversight across all regional booking centres."
+        "can_approve": False,
+        "notes": "Full supervisory audit and compliance oversight. Read-only review mode (commercial trade execution reserved for assigned RM)."
     }
 }
 
@@ -976,6 +979,23 @@ with tab_actions:
     comingling_opportunities = client_result.get("comingling_opportunities", [])
     compliance_flags = client_result["compliance_flags"]
 
+    is_read_only = not active_rm_info.get("can_approve", True)
+    if is_read_only:
+        st.markdown(f"""
+        <div style="background: rgba(197, 168, 128, 0.12); border: 1.5px solid rgba(197, 168, 128, 0.45); border-radius: 8px; padding: 0.9rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: #C5A880;">🔍 Supervisory Desk Head Audit Mode (Read-Only Review)</div>
+                <div style="font-size: 0.82rem; color: #E2E8F0; margin-top: 0.25rem; line-height: 1.4;">
+                    You are authenticated with supervisory oversight credentials (<strong>{st.session_state.logged_in_user} • {st.session_state.logged_in_rm_id}</strong>).<br>
+                    Under Julius Baer Compliance Policy #PB-AUD-101, commercial action approval, trade sign-off, and talking point phrasing are reserved exclusively for the assigned Relationship Manager (<strong>Priscilla Ong</strong>).
+                </div>
+            </div>
+            <div style="margin-left: 1rem;">
+                <span class="jb-badge jb-badge-fact" style="font-size: 0.78rem; padding: 0.4rem 0.8rem; white-space: nowrap;">🔒 Read-Only Audit</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
     # Compliance suitability banners
     if compliance_flags:
         for flag in compliance_flags:
@@ -1149,34 +1169,42 @@ with tab_actions:
 
                 curr_pkg_tp = st.session_state.custom_talking_points.get(pkg_id, pkg_unified_tp)
                 edited_pkg_tp = st.text_area(
-                    "💬 Unified Client-Ready Advisory Phrasing (Verbatim for RM)",
+                    "💬 Unified Client-Ready Advisory Phrasing (Verbatim for RM)" + (" [Read-Only in Supervisory Audit Mode]" if is_read_only else ""),
                     value=curr_pkg_tp,
                     key=f"tp_pkg_{pkg_id}",
-                    height=80
+                    height=80,
+                    disabled=is_read_only
                 )
-                if edited_pkg_tp != curr_pkg_tp:
+                if not is_read_only and edited_pkg_tp != curr_pkg_tp:
                     st.session_state.custom_talking_points[pkg_id] = edited_pkg_tp
 
-                col_pkg1, col_pkg2, col_pkg3 = st.columns([3, 2, 4])
-                with col_pkg1:
-                    if st.button("⚡ Approve Unified Package (1-Click)", key=f"btn_app_pkg_{pkg_id}", use_container_width=True):
-                        for rid in clubbed_rec_ids:
-                            st.session_state.approved_actions[rid] = True
-                            st.session_state.dismissed_actions[rid] = False
-                        st.session_state.approved_actions[pkg_id] = True
-                        st.rerun()
-                with col_pkg2:
-                    if st.button("❌ Dismiss Package", key=f"btn_dism_pkg_{pkg_id}", use_container_width=True):
-                        for rid in clubbed_rec_ids:
-                            st.session_state.approved_actions[rid] = False
-                            st.session_state.dismissed_actions[rid] = True
-                        st.session_state.approved_actions[pkg_id] = False
-                        st.rerun()
-                with col_pkg3:
-                    if is_pkg_approved:
-                        st.markdown("<span style='color: #2ECC71; font-weight: 600;'>✓ Unified Package Approved (All 4 Actions Synchronized)</span>", unsafe_allow_html=True)
-                    else:
-                        st.markdown("<span style='color: #94A3B8; font-size: 0.85rem;'>Approve unified package to queue synchronized multi-trade briefing to Tab 4.</span>", unsafe_allow_html=True)
+                if is_read_only:
+                    st.markdown(f"""
+                    <div style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(197,168,128,0.35); border-radius: 6px; padding: 0.65rem 0.9rem; font-size: 0.83rem; color: #94A3B8;">
+                        🔒 <strong>Approval Locked:</strong> Supervisory Desk Head ({st.session_state.logged_in_user}) has read-only oversight privileges. Action approval and commercial trade sign-off require assigned RM (Priscilla Ong) credentials.
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    col_pkg1, col_pkg2, col_pkg3 = st.columns([3, 2, 4])
+                    with col_pkg1:
+                        if st.button("⚡ Approve Unified Package (1-Click)", key=f"btn_app_pkg_{pkg_id}", use_container_width=True):
+                            for rid in clubbed_rec_ids:
+                                st.session_state.approved_actions[rid] = True
+                                st.session_state.dismissed_actions[rid] = False
+                            st.session_state.approved_actions[pkg_id] = True
+                            st.rerun()
+                    with col_pkg2:
+                        if st.button("❌ Dismiss Package", key=f"btn_dism_pkg_{pkg_id}", use_container_width=True):
+                            for rid in clubbed_rec_ids:
+                                st.session_state.approved_actions[rid] = False
+                                st.session_state.dismissed_actions[rid] = True
+                            st.session_state.approved_actions[pkg_id] = False
+                            st.rerun()
+                    with col_pkg3:
+                        if is_pkg_approved:
+                            st.markdown("<span style='color: #2ECC71; font-weight: 600;'>✓ Unified Package Approved (All 4 Actions Synchronized)</span>", unsafe_allow_html=True)
+                        else:
+                            st.markdown("<span style='color: #94A3B8; font-size: 0.85rem;'>Approve unified package to queue synchronized multi-trade briefing to Tab 4.</span>", unsafe_allow_html=True)
 
                 st.markdown("<hr style='border-color: rgba(255,255,255,0.12); margin: 1.5rem 0;'>", unsafe_allow_html=True)
 
@@ -1268,12 +1296,13 @@ with tab_actions:
                 # Editable Client-Ready Talking Point
                 curr_tp = st.session_state.custom_talking_points.get(rec["id"], default_talking_point)
                 edited_tp = st.text_area(
-                    f"💬 Client-Ready Phrasing (Verbatim for RM)",
+                    f"💬 Client-Ready Phrasing (Verbatim for RM)" + (" [Read-Only in Supervisory Audit Mode]" if is_read_only else ""),
                     value=curr_tp,
                     key=f"tp_{prefix}_{rec['id']}",
-                    height=70
+                    height=70,
+                    disabled=is_read_only
                 )
-                if edited_tp != curr_tp:
+                if not is_read_only and edited_tp != curr_tp:
                     st.session_state.custom_talking_points[rec["id"]] = edited_tp
 
                 # 1-Click Evidence Audit Trail Drawer
@@ -1287,22 +1316,29 @@ with tab_actions:
                         """)
 
                 # RM Control Decision Bar
-                col_act1, col_act2, col_act3 = st.columns([2, 2, 4])
-                with col_act1:
-                    if st.button(f"✅ Approve Action", key=f"app_{prefix}_{rec['id']}", use_container_width=True):
-                        st.session_state.approved_actions[rec["id"]] = True
-                        st.session_state.dismissed_actions[rec["id"]] = False
-                        st.rerun()
-                with col_act2:
-                    if st.button(f"❌ Dismiss Action", key=f"dism_{prefix}_{rec['id']}", use_container_width=True):
-                        st.session_state.dismissed_actions[rec["id"]] = True
-                        st.session_state.approved_actions[rec["id"]] = False
-                        st.rerun()
-                with col_act3:
-                    if is_approved:
-                        st.markdown("<span style='color: #2ECC71; font-weight: 600;'>✓ Action Approved & Queued for Client Meeting Pack</span>", unsafe_allow_html=True)
-                    elif is_dismissed:
-                        st.markdown("<span style='color: #E74C3C; font-weight: 600;'>✗ Action Dismissed by RM</span>", unsafe_allow_html=True)
+                if is_read_only:
+                    st.markdown(f"""
+                    <div style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15); border-radius: 6px; padding: 0.55rem 0.85rem; font-size: 0.82rem; color: #94A3B8;">
+                        🔒 <strong>Approval Locked:</strong> Read-only supervisory audit mode. Commercial action sign-off reserved for assigned RM (Priscilla Ong).
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    col_act1, col_act2, col_act3 = st.columns([2, 2, 4])
+                    with col_act1:
+                        if st.button(f"✅ Approve Action", key=f"app_{prefix}_{rec['id']}", use_container_width=True):
+                            st.session_state.approved_actions[rec["id"]] = True
+                            st.session_state.dismissed_actions[rec["id"]] = False
+                            st.rerun()
+                    with col_act2:
+                        if st.button(f"❌ Dismiss Action", key=f"dism_{prefix}_{rec['id']}", use_container_width=True):
+                            st.session_state.dismissed_actions[rec["id"]] = True
+                            st.session_state.approved_actions[rec["id"]] = False
+                            st.rerun()
+                    with col_act3:
+                        if is_approved:
+                            st.markdown("<span style='color: #2ECC71; font-weight: 600;'>✓ Action Approved & Queued for Client Meeting Pack</span>", unsafe_allow_html=True)
+                        elif is_dismissed:
+                            st.markdown("<span style='color: #E74C3C; font-weight: 600;'>✗ Action Dismissed by RM</span>", unsafe_allow_html=True)
 
                 st.markdown("<hr style='border-color: rgba(255,255,255,0.08); margin: 1.25rem 0;'>", unsafe_allow_html=True)
 
@@ -1352,6 +1388,16 @@ with tab_pack:
 
     target_cid = st.session_state.selected_client_id
     client = repo.get_client(target_cid)
+
+    if is_read_only:
+        st.markdown(f"""
+        <div style="background: rgba(197, 168, 128, 0.1); border: 1px solid rgba(197, 168, 128, 0.35); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.85rem; color: #C5A880;">
+                🔍 <strong>Supervisory Compliance Review:</strong> Viewing client briefing pack copy under Supervisory Desk Head authority ({st.session_state.logged_in_user} • {st.session_state.logged_in_rm_id}).
+            </div>
+            <span class="jb-badge jb-badge-fact" style="font-size: 0.72rem;">Compliance Oversight Copy</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     if client:
         client_result = orchestrator.run_client(target_cid, selected_snapshot)
