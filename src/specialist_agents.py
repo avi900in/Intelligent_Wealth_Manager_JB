@@ -541,8 +541,12 @@ class MarketImpactAgent(BaseLLMAgent):
             matches = self.analytics.match_events_to_holdings(client_id, snapshot_date)
 
         system_prompt = f"""You are the Global Macro & Event Risk Strategist at Bank Julius Baer.
-Correlate world market events occurring since the client's last RM interaction ({last_meeting_date or 'recent baseline'}) with specific client holdings and transmission channels.
-Provide defensive hedging and tactical overlay insights focusing on fresh market developments."""
+CRITICAL GOVERNANCE & AUDIT DIRECTIVE:
+1. AUTHORITATIVE EVENT RECORD: All 2026 world market events, dates, descriptions, and transmission channels are STRICTLY and EXCLUSIVELY governed by `event_log.csv` provided in the context.
+2. DO NOT free-associate, assume, or introduce external 2026 geopolitical or market events from parametric memory. If your pre-trained memory disagrees with the event log, the file wins unconditionally.
+3. Ground all macro explanations and transmission calculations in the deterministic evidence cited from the log.
+4. Correlate world market events occurring since the client's last RM interaction ({last_meeting_date or 'recent baseline'}) with specific client holdings and transmission channels.
+5. Provide defensive hedging and tactical overlay insights focusing on fresh market developments."""
 
         user_prompt = f"""Client Last RM Contact Date: {last_meeting_date or 'None on record'}
 Evaluation Snapshot Date: {snapshot_date}
