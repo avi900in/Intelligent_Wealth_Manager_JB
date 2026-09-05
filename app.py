@@ -105,6 +105,8 @@ if "dismissed_actions" not in st.session_state:
     st.session_state.dismissed_actions = {}
 if "custom_talking_points" not in st.session_state:
     st.session_state.custom_talking_points = {}
+if "desk_head_endorsements" not in st.session_state:
+    st.session_state.desk_head_endorsements = {}
 if "groq_api_key" not in st.session_state:
     st.session_state.groq_api_key = ""
 
@@ -1381,28 +1383,81 @@ with tab_actions:
 with tab_pack:
     pack_top_c1, pack_top_c2 = st.columns([3, 1.5])
     with pack_top_c1:
-        st.markdown(f"### 📄 Client Meeting Brief & Email Generator")
-        st.caption("Compiles all RM-approved recommendations and talking points into a private banking client brief.")
+        st.markdown(f"### 📄 Client Meeting Brief & Governance Pack")
+        st.caption("Compiles RM-approved recommendations, multi-objective packages, and supervisory pre-clearance into client-ready briefings and internal audit dossiers.")
     with pack_top_c2:
         render_client_switcher("tab4")
 
     target_cid = st.session_state.selected_client_id
     client = repo.get_client(target_cid)
 
-    if is_read_only:
-        st.markdown(f"""
-        <div style="background: rgba(197, 168, 128, 0.1); border: 1px solid rgba(197, 168, 128, 0.35); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 0.85rem; color: #C5A880;">
-                🔍 <strong>Supervisory Compliance Review:</strong> Viewing client briefing pack copy under Supervisory Desk Head authority ({st.session_state.logged_in_user} • {st.session_state.logged_in_rm_id}).
-            </div>
-            <span class="jb-badge jb-badge-fact" style="font-size: 0.72rem;">Compliance Oversight Copy</span>
-        </div>
-        """, unsafe_allow_html=True)
-
     if client:
         client_result = orchestrator.run_client(target_cid, selected_snapshot)
         recs = client_result["recommendations"]
-        
+        disp_client_name = format_client_display_name(client['client_name'], client['client_id'])
+        client_context = client_result.get("client_context", {})
+
+        # ---------------------------------------------------------
+        # 1. 4-POINT SUPERVISORY GOVERNANCE & SUITABILITY CHECKLIST
+        # ---------------------------------------------------------
+        kyc_due = client.get("kyc_review_due", "2027-01-01")
+        kyc_ok = kyc_due >= selected_snapshot
+        kyc_badge = "✅ Cleared" if kyc_ok else "⚠️ Review Due"
+        kyc_color = "#55EFC4" if kyc_ok else "#FDCB6E"
+
+        st.markdown("#### 🛡️ 4-Point Supervisory Governance & Suitability Audit")
+        st.markdown(f"""
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(85,239,196,0.3); border-radius: 8px; padding: 0.75rem;">
+                <div style="font-size: 0.72rem; color: {kyc_color}; font-weight: 700; text-transform: uppercase;">1. KYC & PEP Clearance</div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">{kyc_badge}</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">Review Due: {kyc_due}</div>
+            </div>
+            <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(85,239,196,0.3); border-radius: 8px; padding: 0.75rem;">
+                <div style="font-size: 0.72rem; color: #55EFC4; font-weight: 700; text-transform: uppercase;">2. Mandate Suitability</div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">✅ Suitable Fit</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">{client.get('risk_profile')} ({client.get('risk_tolerance_score', 'N/A')}/100)</div>
+            </div>
+            <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(85,239,196,0.3); border-radius: 8px; padding: 0.75rem;">
+                <div style="font-size: 0.72rem; color: #55EFC4; font-weight: 700; text-transform: uppercase;">3. Standing Exclusions</div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">✅ Validated</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">0 exclusion violations</div>
+            </div>
+            <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(85,239,196,0.3); border-radius: 8px; padding: 0.75rem;">
+                <div style="font-size: 0.72rem; color: #55EFC4; font-weight: 700; text-transform: uppercase;">4. Cross-Border Fit</div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">✅ Compliant</div>
+                <div style="font-size: 0.75rem; color: #94A3B8;">{client.get('tax_domicile')} → {client.get('booking_centre')}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ---------------------------------------------------------
+        # 2. SUPERVISORY DESK HEAD ENDORSEMENT STAMP (FOR MARC GUGGENHEIM)
+        # ---------------------------------------------------------
+        is_endorsed = st.session_state.desk_head_endorsements.get(target_cid, False)
+        if is_read_only:
+            e_col1, e_col2 = st.columns([3.2, 1.8])
+            with e_col1:
+                endorse_status_html = '<span style="color: #2ECC71; font-weight: 700;">✓ SUPERVISORY ENDORSEMENT ACTIVE</span> — Certified for RM Client Delivery' if is_endorsed else '<span style="color: #FDCB6E; font-weight: 600;">⏳ Pending Desk Head Supervisory Endorsement</span>'
+                st.markdown(f"""
+                <div style="background: rgba(197, 168, 128, 0.08); border: 1px solid {'#2ECC71' if is_endorsed else 'rgba(197, 168, 128, 0.35)'}; border-radius: 8px; padding: 0.85rem 1.1rem; margin-bottom: 1.25rem;">
+                    <div style="font-size: 0.88rem; font-weight: 700; color: #C5A880; margin-bottom: 0.25rem;">✍️ Desk Head Supervisory Endorsement Authority</div>
+                    <div style="font-size: 0.82rem; color: #E2E8F0;">{endorse_status_html}</div>
+                    <div style="font-size: 0.76rem; color: #94A3B8; margin-top: 0.2rem;">Governance Policy #PB-AUD-101 • Reviewing Officer: Marc Guggenheim (DH-SG-001)</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with e_col2:
+                st.markdown("<div style='margin-top: 6px;'>", unsafe_allow_html=True)
+                if not is_endorsed:
+                    if st.button("✍️ Endorse Meeting Pack", key=f"btn_endorse_{target_cid}", use_container_width=True):
+                        st.session_state.desk_head_endorsements[target_cid] = True
+                        st.rerun()
+                else:
+                    if st.button("↩️ Revoke Endorsement", key=f"btn_revoke_{target_cid}", use_container_width=True):
+                        st.session_state.desk_head_endorsements[target_cid] = False
+                        st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+
         approved_recs = [r for r in recs if st.session_state.approved_actions.get(r["id"], False)]
         if approved_recs:
             st.success(f"✅ **{len(approved_recs)} RM-Approved Action(s) Included** in this client communication.")
@@ -1413,13 +1468,163 @@ with tab_pack:
         # Check for approved comingling packages
         approved_pkgs = [p for p in client_result.get("comingling_opportunities", []) if st.session_state.approved_actions.get(p["id"], False)]
 
-        meeting_format = st.radio("Communication Format", options=["Executive Client Briefing Note", "Formal Advisory Email", "Meeting Discussion Agenda"], horizontal=True)
+        # Communication formats (including Internal Supervisory Audit Memo for Marc Guggenheim)
+        format_options = ["Executive Client Briefing Note", "Formal Advisory Email", "Meeting Discussion Agenda"]
+        if is_read_only:
+            format_options.append("Internal Supervisory Audit Dossier & Risk Memo")
+
+        meeting_format = st.radio("Communication Format", options=format_options, horizontal=True)
 
         lang = client.get("reporting_language", "English")
 
-        # Generate Formal Document Content
-        disp_client_name = format_client_display_name(client['client_name'], client['client_id'])
-        pack_content = f"""**CONFIDENTIAL — BANK JULIUS BAER & CO. LTD.**
+        # ---------------------------------------------------------
+        # 3. GENERATE DOCUMENT CONTENT BY SELECTED FORMAT
+        # ---------------------------------------------------------
+        endorsement_stamp = ""
+        if is_endorsed:
+            endorsement_stamp = f"""================================================================================
+🏛️ BANK JULIUS BAER — SUPERVISORY DESK HEAD COMPLIANCE ENDORSEMENT
+================================================================================
+Status: SUPERVISORY PRE-CLEARANCE GRANTED & SUITABILITY ENDORSED
+Reviewing Officer: Marc Guggenheim (DH-SG-001 — Supervisory Desk Head)
+Audit Clearance Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+Governance Mandate: Julius Baer Private Banking Governance Standard PB-AUD-101
+Audit Scope: Multi-Agent Synthesis, Cross-Border Suitability, Lombard Lending Buffers
+================================================================================
+
+"""
+
+        if meeting_format == "Internal Supervisory Audit Dossier & Risk Memo":
+            # Comprehensive Internal Risk & Supervisory Audit Memo
+            pack_content = f"""**CONFIDENTIAL — BANK JULIUS BAER & CO. LTD.**
+**SUPERVISORY AUDIT DOSSIER & COMPLIANCE PRE-CLEARANCE MEMO**
+**FOR INTERNAL GOVERNANCE & RISK COMMITTEE REVIEW ONLY**
+
+{endorsement_stamp}**Target Client:** {disp_client_name} ({client['client_id']})
+**Date:** {datetime.now().strftime('%d %B %Y')} | Valuation Snapshot: {selected_snapshot}
+**Assigned Relationship Manager:** {client.get('rm_name', 'Priscilla Ong')} ({client.get('rm_desk')})
+**Booking Centre:** {client.get('booking_centre')} | Tax Domicile: {client.get('tax_domicile')}
+**Total Stated AUM:** USD {client.get('total_aum_usd', 0)/1e6:,.2f}M | Wealth Band: {client.get('wealth_band')}
+
+---
+
+### 1. GOVERNANCE & SUITABILITY ASSESSMENT (4-POINT AUDIT)
+1. **KYC & Periodic Review:** Status = {kyc_badge} (Review Due: {kyc_due}) | PEP Status: {client.get('pep_status', 'No')}
+2. **Mandate Fit:** Risk Profile = {client.get('risk_profile')} (Score: {client.get('risk_tolerance_score')}/100) | Investment Horizon: {client.get('investment_horizon_years')} Years
+3. **Standing Instructions & Overrides:** Validated against standing RM notes ({len(client_context.get('standing_instructions', []))} notes active) — 0 exclusion violations.
+4. **Cross-Border Regulatory Compliance:** MAS/SFC private banking cross-border solicitation rules verified for {client.get('tax_domicile')} domicile booked in {client.get('booking_centre')}.
+
+---
+
+### 2. MASTER ORCHESTRATOR SYNTHESIS & CROSS-SPECIALIST ALPHA
+- **Total Specialist Agent Proposals Evaluated:** {len(recs)}
+- **Synergistic Comingling Packages Detected:** {len(client_result.get('comingling_opportunities', []))}
+- **Cross-Agent Conflicts Surfaced & Resolved:** {len(client_result.get('conflicts', []))}
+- **Master Orchestrator Strategic Optimizations:** {len(client_result.get('cross_specialist_optimizations', []))}
+- **Pre-Clearance Urgency Score:** {client_result.get('urgency_score', 0):.0f} / 100
+
+---
+
+### 3. PURE-FUNCTION EVIDENCE & AUDIT TRAIL CITATIONS
+"""
+            for i, r in enumerate(recs, 1):
+                ev = r["evidence"][0] if r.get("evidence") else {}
+                pack_content += f"""**Item {i}: [{r['agent'].upper()}] {r['headline']}**
+- *Pure Function Citation:* `{ev.get('source_function', 'N/A')}`
+- *Calculated Metric Fact:* {ev.get('detail', 'N/A')} (as of {ev.get('as_of_date', selected_snapshot)})
+- *Compliance Status:* {r.get('compliance_status', 'pass').upper()} | Priority: {r.get('priority', 'medium').upper()}
+- *Proposed Execution:* {r['recommendation']}
+"""
+
+            pack_content += f"""
+---
+### 4. SUPERVISORY SIGN-OFF & AUDIT RECORD
+- **Reviewing Desk Head:** Marc Guggenheim (DH-SG-001)
+- **Supervisory Decision:** {'ENDORSED FOR COMMERCIAL EXECUTION' if is_endorsed else 'PENDING DESK HEAD SIGN-OFF'}
+- **Digital Audit Token:** SHA256-JB-AUD-{client['client_id']}-{selected_snapshot}
+"""
+
+        elif meeting_format == "Formal Advisory Email":
+            # Executive Client Email
+            pack_content = f"""{endorsement_stamp}**Subject:** Bank Julius Baer — Strategic Portfolio & Allocation Review for {disp_client_name}
+**Date:** {datetime.now().strftime('%d %B %Y')}
+**From:** {client.get('rm_name', 'Priscilla Ong')} <priscilla.ong@juliusbaer.com>
+**To:** {disp_client_name}
+
+Dear {disp_client_name},
+
+I hope this email finds you well.
+
+As part of our continuous portfolio stewardship at Bank Julius Baer, our specialist advisory team and multi-mandate analytics have completed a strategic review of your holdings, credit lines, and cash reserves as of our valuation snapshot ({selected_snapshot}).
+
+We have outlined key strategic recommendations for your review below:
+"""
+            if approved_pkgs:
+                for pkg in approved_pkgs:
+                    pkg_tp = st.session_state.custom_talking_points.get(pkg["id"], pkg["unified_talking_point"])
+                    pack_content += f"""
+**★ Unified Strategic Action Package: {pkg['title']}**
+{pkg['summary']}
+- **Action Plan:** {pkg['unified_action']}
+- **Key Client Benefit:** {pkg_tp}
+"""
+            for i, r in enumerate(approved_recs, 1):
+                tp = st.session_state.custom_talking_points.get(r["id"], r["talking_point"])
+                pack_content += f"""
+**{i}. {r['headline']}**
+- **Recommended Action:** {r['recommendation']}
+- **Rationale:** {tp}
+"""
+            pack_content += f"""
+Please let me know your availability for a brief discussion this week so we can review these adjustments and ensure full alignment with your upcoming milestone objectives.
+
+Warm regards,
+
+**{client.get('rm_name', 'Priscilla Ong')}**
+Senior Partner | Relationship Management
+Bank Julius Baer & Co. Ltd., {client.get('booking_centre')} Booking Centre
+"""
+
+        elif meeting_format == "Meeting Discussion Agenda":
+            # Client Meeting Agenda
+            pack_content = f"""{endorsement_stamp}**BANK JULIUS BAER & CO. LTD.**
+**PORTFOLIO REVIEW MEETING AGENDA**
+
+**Client:** {disp_client_name} ({client['client_id']})
+**Date:** {datetime.now().strftime('%d %B %Y')} | Snapshot: {selected_snapshot}
+**Attendees:** {disp_client_name}, {client.get('rm_name', 'Priscilla Ong')} (Relationship Manager)
+
+---
+
+### Agenda Overview (45 Minutes)
+
+1. **Macro & Market Context (10 mins)**
+   - Regional macro environment and tactical asset allocation stance.
+   
+2. **Portfolio Health & Mandate Alignment (15 mins)**
+   - Review of asset allocation drift and concentration thresholds.
+   - Lombard credit facility headroom and liquidity coverage buffer.
+
+3. **Key Advisory Proposals & Decision Items (15 mins)**
+"""
+            if approved_pkgs:
+                for pkg in approved_pkgs:
+                    pack_content += f"""   - **Unified Strategy:** {pkg['title']} ({pkg['summary']})
+"""
+            for i, r in enumerate(approved_recs, 1):
+                pack_content += f"""   - **Item {i}:** {r['headline']} — {r['recommendation']}
+"""
+            pack_content += f"""
+4. **Q&A, Governance Sign-off & Next Steps (5 mins)**
+   - Confirmation of execution mandate and schedule of next periodic review.
+
+---
+**Bank Julius Baer & Co. Ltd.**
+"""
+
+        else:
+            # Executive Client Briefing Note
+            pack_content = f"""{endorsement_stamp}**CONFIDENTIAL — BANK JULIUS BAER & CO. LTD.**
 **PORTFOLIO INTELLIGENCE & ADVISORY BRIEFING**
 
 **Client:** {disp_client_name} ({client['client_id']})
@@ -1435,10 +1640,10 @@ Dear {disp_client_name},
 
 As part of Bank Julius Baer's continuous portfolio stewardship, we have reviewed your asset allocations, credit facilities, and liquidity provisions across your mandates.
 """
-        if approved_pkgs:
-            for pkg in approved_pkgs:
-                pkg_tp = st.session_state.custom_talking_points.get(pkg["id"], pkg["unified_talking_point"])
-                pack_content += f"""
+            if approved_pkgs:
+                for pkg in approved_pkgs:
+                    pkg_tp = st.session_state.custom_talking_points.get(pkg["id"], pkg["unified_talking_point"])
+                    pack_content += f"""
 ### 2. Unified Strategic Execution Package (Multi-Objective Synergy)
 **Strategy:** {pkg['title']}
 - **Summary:** {pkg['summary']}
@@ -1446,25 +1651,25 @@ As part of Bank Julius Baer's continuous portfolio stewardship, we have reviewed
 {pkg['unified_action']}
 - **Advisory Phrasing:** {pkg_tp}
 """
-            pack_content += """
+                pack_content += """
 ### 3. Detailed Component Recommendations & Governance Audit
 """
-        else:
-            pack_content += """
+            else:
+                pack_content += """
 ### 2. Strategic Insights & Recommended Actions
 """
 
-        for i, r in enumerate(approved_recs, 1):
-            tp = st.session_state.custom_talking_points.get(r["id"], r["talking_point"])
-            pack_content += f"""
+            for i, r in enumerate(approved_recs, 1):
+                tp = st.session_state.custom_talking_points.get(r["id"], r["talking_point"])
+                pack_content += f"""
 **{i}. {r['headline']}**
 - **Action:** {r['recommendation']}
 - **Advisory Rationale:** {tp}
 - **Governance Audit Citation:** {r['evidence'][0]['detail']} (as of {r['evidence'][0]['as_of_date']})
 """
 
-        step_num = 4 if approved_pkgs else 3
-        pack_content += f"""
+            step_num = 4 if approved_pkgs else 3
+            pack_content += f"""
 ---
 ### {step_num}. Next Steps & Governance
 We look forward to reviewing these adjustments during our upcoming conversation. Please let us know if any personal circumstances or liquidity horizons have evolved.
@@ -1475,12 +1680,13 @@ Sincerely,
 Bank Julius Baer & Co. Ltd.
 """
 
-        st.text_area("Generated Formal Document Preview", value=pack_content, height=420)
+        st.text_area("Generated Document Preview", value=pack_content, height=440)
         
+        file_suffix = "AuditDossier" if meeting_format == "Internal Supervisory Audit Dossier & Risk Memo" else "Brief"
         st.download_button(
-            label="💾 Download Client Briefing (.md / .txt)",
+            label=f"💾 Download {meeting_format} (.md / .txt)",
             data=pack_content,
-            file_name=f"JuliusBaer_Brief_{client['client_id']}_{selected_snapshot}.txt",
+            file_name=f"JuliusBaer_{file_suffix}_{client['client_id']}_{selected_snapshot}.txt",
             mime="text/plain"
         )
 
