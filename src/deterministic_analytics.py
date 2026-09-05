@@ -544,26 +544,45 @@ class DeterministicAnalytics:
             ev_sev = str(ev.get("severity", "Medium"))
 
             affected_holdings = []
+            ev_lower = (ev_desc + " " + ev_trans).lower()
             for h in holdings:
-                h_sector = str(h.get("sector", ""))
-                h_region = str(h.get("region", ""))
-                h_name = str(h.get("instrument_name", ""))
+                h_sector = str(h.get("sector", "")).lower()
+                h_region = str(h.get("region", "")).lower()
+                h_name = str(h.get("instrument_name", "")).lower()
+                h_asset = str(h.get("asset_class", "")).lower()
                 
-                # Check match
                 is_hit = False
                 channel = ""
-                if ev_region.lower() in h_region.lower() or h_region.lower() in ev_region.lower():
-                    is_hit = True
-                    channel = f"Regional exposure ({h_region})"
-                if any(k in h_sector.lower() for k in ["energy", "technology", "shipping", "semiconductor", "materials", "banking"]):
-                    if any(k in ev_desc.lower() for k in ["energy", "chip", "tech", "shipping", "rate", "tariff", "oil", "gold"]):
+
+                if any(k in ev_lower for k in ["gold", "bullion", "precious metal"]):
+                    if "gold" in h_name or "gold" in h_sector or "gold" in h_asset or "commodities" in h_asset:
                         is_hit = True
-                        channel = f"Sector transmission ({h_sector})"
+                        channel = "Gold & Precious Metals Exposure"
+                elif any(k in ev_lower for k in ["oil", "brent", "crude", "petroleum", "opec", "energy"]):
+                    if any(k in h_sector for k in ["energy", "oil", "gas"]) or any(k in h_name for k in ["energy", "oil", "crude"]):
+                        is_hit = True
+                        channel = "Energy & Commodity Sector Transmission"
+                elif any(k in ev_lower for k in ["chip", "semiconductor", "tech", "ai", "software", "hardware"]):
+                    if any(k in h_sector for k in ["technology", "semiconductor", "software"]) or any(k in h_name for k in ["tech", "semiconductor"]):
+                        is_hit = True
+                        channel = "Technology & Semiconductor Sector Transmission"
+                elif any(k in ev_lower for k in ["shipping", "freight", "strait", "red sea", "canal", "logistics"]):
+                    if any(k in h_sector for k in ["shipping", "transport", "logistics", "industrials"]):
+                        is_hit = True
+                        channel = "Supply Chain & Shipping Transmission"
+                elif any(k in ev_lower for k in ["rate", "central bank", "ecb", "fed", "yield", "rate hike", "rate cut"]):
+                    if any(k in h_asset for k in ["fixed income", "bond"]) or any(k in h_sector for k in ["banking", "financials"]):
+                        is_hit = True
+                        channel = "Interest Rate & Monetary Transmission"
+                elif ev_region and ev_region.lower() not in ["global", "world", "all", ""]:
+                    if ev_region.lower() in h_region or h_region in ev_region.lower():
+                        is_hit = True
+                        channel = f"Regional exposure ({h_region.title()})"
 
                 if is_hit:
                     affected_holdings.append({
                         "instrument_id": h["instrument_id"],
-                        "instrument_name": h_name,
+                        "instrument_name": h["instrument_name"],
                         "market_value_usd": h["market_value_usd"],
                         "weight_pct": h["weight_pct"],
                         "channel": channel

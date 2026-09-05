@@ -558,8 +558,14 @@ Correlated New Market Events & Affected Holdings (Occurring Post-Last-Meeting):
                 ev_date = match["event_date"]
                 trans = match["transmission"]
                 exposed_usd = match["total_exposed_usd"]
+                is_post = match.get("is_post_meeting", True)
                 
-                since_prefix = f"Post-{last_meeting_date} " if last_meeting_date else ""
+                if last_meeting_date and is_post:
+                    since_prefix = f"Post-{last_meeting_date} Event on {ev_date}"
+                elif last_meeting_date and not is_post:
+                    since_prefix = f"Macro Risk Factor ({ev_date})"
+                else:
+                    since_prefix = f"Event on {ev_date}"
 
                 recs.append(Recommendation(
                     id=make_rec_id("MKT", client_id, f"{ev_date}_{ev_desc[:20]}"),
@@ -568,11 +574,11 @@ Correlated New Market Events & Affected Holdings (Occurring Post-Last-Meeting):
                     agent="market",
                     priority="medium",
                     confidence_tier="model",
-                    headline=f"Macro Event Transmission ({since_prefix}Event on {ev_date}): '{ev_desc}' impacts USD {exposed_usd:,.0f} in exposed holdings",
+                    headline=f"Macro Event Transmission ({since_prefix}): '{ev_desc}' impacts USD {exposed_usd:,.0f} in exposed holdings",
                     evidence=[
                         EvidenceItem(
                             source_function="match_events_to_holdings",
-                            detail=f"New event post last meeting ({last_meeting_date or 'baseline'}): '{ev_desc}' ({ev_date}) via {trans}. Correlated holdings total USD {exposed_usd:,.0f}",
+                            detail=f"Macro event ('{ev_desc}' on {ev_date}) via {trans}. Correlated holdings total USD {exposed_usd:,.0f}",
                             as_of_date=snapshot_date,
                             threshold_or_band=f"Event Date: {ev_date} | Last RM Interaction: {last_meeting_date or 'N/A'}",
                             raw_metric_value=exposed_usd
@@ -580,10 +586,7 @@ Correlated New Market Events & Affected Holdings (Occurring Post-Last-Meeting):
                     ],
                     recommendation=f"Review defensive hedges or structured downside protection for positions sensitive to {trans.lower()}.",
                     talking_point=(
-                        f"Since our last meeting on {last_meeting_date}, several key market developments have emerged — notably: {ev_desc.lower()} ({ev_date}). "
-                        f"We have evaluated the transmission channels across your portfolios (USD {exposed_usd:,.0f} exposed) and prepared defensive positioning options."
-                        if last_meeting_date else
-                        f"In light of recent market developments regarding {ev_desc.lower()} ({ev_date}), we have evaluated the transmission channels across your portfolio and prepared defensive positioning options."
+                        f"In light of market developments regarding {ev_desc.lower()} ({ev_date}), we have evaluated the transmission channels across your portfolios (USD {exposed_usd:,.0f} exposed) and prepared defensive positioning options."
                     ),
                     compliance_status="pass"
                 ))

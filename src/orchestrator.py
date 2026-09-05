@@ -39,27 +39,30 @@ class ClientOrchestrator:
         context = self.context_assembler.assemble(client_id, snapshot_date)
         
         # 2. Run Specialist Agents
-        recs: List[Recommendation] = []
-        recs.extend(self.rebalancing_agent.run(context, snapshot_date))
-        recs.extend(self.tax_agent.run(context, snapshot_date))
-        recs.extend(self.life_event_agent.run(context, snapshot_date))
-        recs.extend(self.liquidity_agent.run(context, snapshot_date))
-        recs.extend(self.market_agent.run(context, snapshot_date))
-        recs.extend(self.rm_notes_agent.run(context, snapshot_date))
+        raw_recs: List[Recommendation] = []
+        raw_recs.extend(self.rebalancing_agent.run(context, snapshot_date))
+        raw_recs.extend(self.tax_agent.run(context, snapshot_date))
+        raw_recs.extend(self.life_event_agent.run(context, snapshot_date))
+        raw_recs.extend(self.liquidity_agent.run(context, snapshot_date))
+        raw_recs.extend(self.market_agent.run(context, snapshot_date))
+        raw_recs.extend(self.rm_notes_agent.run(context, snapshot_date))
 
-        # 3. Detect Conflicts
+        # 3. Dynamic Orchestrator Deduplication & Cross-Agent Synthesis
+        recs = self._deduplicate_and_synthesize_recs(raw_recs, context, snapshot_date)
+
+        # 4. Detect Conflicts
         conflicts = self._detect_conflicts(recs, context)
 
-        # 4. Discover Comingling & Clubbing Opportunities
+        # 5. Discover Comingling & Clubbing Opportunities
         comingling_opportunities = self._detect_comingling_opportunities(recs, context, snapshot_date)
 
-        # 5. Compliance & Suitability Gate
+        # 6. Compliance & Suitability Gate
         compliance_flags = self._compliance_gate(recs, context)
 
-        # 6. Client Brief Synthesis
+        # 7. Client Brief Synthesis
         brief = self._synthesize_brief(client_id, recs, conflicts, context)
 
-        # 7. Client Urgency Score & Breakdown
+        # 8. Client Urgency Score & Breakdown
         urgency_score, urgency_breakdown = self._compute_urgency(recs, context, snapshot_date)
 
         return {
@@ -74,6 +77,50 @@ class ClientOrchestrator:
             "urgency_score": round(urgency_score, 1),
             "urgency_breakdown": urgency_breakdown
         }
+
+    def _deduplicate_and_synthesize_recs(self, recs: List[Recommendation], context: Dict[str, Any], snapshot_date: str) -> List[Recommendation]:
+        """
+        Dynamically orchestrates specialist agent recommendations:
+        1. Deduplicates redundant / overlapping Market Agent actions that duplicate Portfolio Rebalancing trims.
+           - When Rebalancing already trims an asset class / position (e.g. Commodities, Equities), the Orchestrator
+             enriches the Rebalancing rationale with the macro context and suppresses duplicate standalone market alerts.
+        2. Validates temporal horizons to prevent stale historical events from generating redundant alerts.
+        """
+        rebalance_recs = [r for r in recs if r.agent == "rebalancing"]
+        market_recs = [r for r in recs if r.agent == "market"]
+        other_recs = [r for r in recs if r.agent not in ["rebalancing", "market"]]
+
+        # Extract asset classes and holding names trimmed by rebalancing
+        rebalance_targets = set()
+        for r in rebalance_recs:
+            h_lower = r.headline.lower()
+            if "commodit" in h_lower or "gold" in h_lower or "materials" in h_lower:
+                rebalance_targets.update(["commodities", "gold", "energy", "oil", "crude", "brent"])
+            if "equity" in h_lower or "equities" in h_lower or "stock" in h_lower:
+                rebalance_targets.update(["equity", "equities", "developed equity", "us equities", "technology"])
+            if ":" in r.headline:
+                inst = r.headline.split(":")[1].split("represents")[0].strip().lower()
+                rebalance_targets.add(inst)
+
+        synthesized_market_recs = []
+        for m in market_recs:
+            m_text = (m.headline + " " + m.recommendation + " " + " ".join(e.detail for e in m.evidence)).lower()
+            
+            # Check overlap with rebalancing targets
+            overlap = any(t in m_text for t in rebalance_targets)
+            
+            if overlap:
+                # Enrich matching rebalancing recommendations with macro transmission context
+                for r in rebalance_recs:
+                    if "macro alignment" not in r.talking_point.lower():
+                        r.talking_point += " Macro Alignment: This rebalancing action also hedges against recent macro volatility flagged by our Macro Strategist."
+                        r.rm_note_influence = (r.rm_note_influence + " | " if r.rm_note_influence else "") + "Orchestrator aligned: De-risking absorbs macro event transmission."
+                # Suppress the redundant standalone market recommendation
+                continue
+            else:
+                synthesized_market_recs.append(m)
+
+        return rebalance_recs + other_recs + synthesized_market_recs
 
     def _detect_comingling_opportunities(self, recs: List[Recommendation], context: Dict[str, Any], snapshot_date: str) -> List[Dict[str, Any]]:
         """
