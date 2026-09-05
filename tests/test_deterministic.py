@@ -152,6 +152,44 @@ class TestDeterministicAnalytics(unittest.TestCase):
             self.assertNotIn("2026-01-26", r["headline"])
             self.assertNotIn("2026-01-28", r["headline"])
 
+    def test_cross_portfolio_concentration(self):
+        """Verify cross-portfolio aggregate concentration look-through detects hidden risks across multiple sleeves."""
+        # Test CL-0001 (Marc Guggenheim has PF-0001 and PF-0002)
+        conc = self.analytics.compute_cross_portfolio_concentration("CL-0001", snapshot_date="2026-08-26", max_single_pos_pct=10.0)
+        self.assertIn("total_wealth_usd", conc)
+        self.assertIn("underlying_exposures", conc)
+        self.assertIn("aggregated_breaches", conc)
+        self.assertGreater(conc["total_wealth_usd"], 0)
+        
+        # Check that underlying exposures list tracks portfolio allocations
+        self.assertGreater(len(conc["underlying_exposures"]), 0)
+        for pos in conc["underlying_exposures"]:
+            self.assertIn("weight_pct", pos)
+            self.assertIn("total_value_usd", pos)
+            self.assertIn("portfolios_involved", pos)
+            self.assertIn("is_multi_portfolio", pos)
+
+    def test_portfolio_returns_point_in_time(self):
+        """Verify point-in-time deterministic portfolio returns calculation for baseline and subsequent snapshots."""
+        # 1. Test baseline date (2025-12-31): cumulative return should be exactly 0.0%
+        base_ret = self.analytics.compute_portfolio_returns("CL-0001", snapshot_date="2025-12-31")
+        self.assertEqual(base_ret["cumulative_return_pct"], 0.0)
+        self.assertEqual(base_ret["cumulative_return_usd"], 0.0)
+        self.assertEqual(base_ret["period_label"], "Baseline Inception")
+
+        # 2. Test 2026-08-26 snapshot for CL-0012 (Cheung Kwok Wing - bond duration losses post-energy shock)
+        ret_kwok = self.analytics.compute_portfolio_returns("CL-0012", snapshot_date="2026-08-26")
+        self.assertIn("cumulative_return_pct", ret_kwok)
+        self.assertIn("period_return_pct", ret_kwok)
+        self.assertIn("sleeve_returns", ret_kwok)
+        self.assertLess(ret_kwok["cumulative_return_pct"], 0.0, "Expected negative cumulative return for bond portfolio duration drag")
+        self.assertGreater(len(ret_kwok["sleeve_returns"]), 0)
+
+        # 3. Test individual portfolio sleeve calculation
+        sleeve_ret = self.analytics.compute_portfolio_returns("CL-0001", snapshot_date="2026-08-26", portfolio_id="PF-0001")
+        self.assertEqual(sleeve_ret["portfolio_id"], "PF-0001")
+        self.assertGreater(sleeve_ret["current_aum_usd"], 0.0)
+
 if __name__ == "__main__":
     unittest.main()
 

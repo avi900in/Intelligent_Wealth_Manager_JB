@@ -248,6 +248,87 @@ class DeterministicAnalytics:
             }
         }
 
+    def compute_cross_portfolio_concentration(self, client_id: str, snapshot_date: str, max_single_pos_pct: float = 10.0) -> Dict[str, Any]:
+        """
+        Computes consolidated whole-client concentration across ALL portfolios and look-through structured entities.
+        Identifies invisible concentrations where an underlying issuer is held across multiple sleeves
+        and breaches the risk limit when aggregated.
+        """
+        all_holdings = self.repo.get_all_holdings_for_client(client_id, snapshot_date)
+        if not all_holdings:
+            return {"client_id": client_id, "snapshot_date": snapshot_date, "aggregated_breaches": [], "underlying_exposures": []}
+
+        total_wealth_usd = sum(h["market_value_usd"] for h in all_holdings)
+        underlying_totals: Dict[str, Dict[str, Any]] = {}
+
+        for h in all_holdings:
+            iid = h["instrument_id"]
+            iname = h["instrument_name"]
+            val_usd = h["market_value_usd"]
+            pf_id = h["portfolio_id"]
+
+            lt_info = self.resolve_look_through(iid)
+            refs = lt_info.get("underlying_references", [iname])
+            split_val = val_usd / max(1, len(refs))
+
+            for ref in refs:
+                if ref not in underlying_totals:
+                    underlying_totals[ref] = {
+                        "name": ref,
+                        "total_value_usd": 0.0,
+                        "portfolios_involved": set(),
+                        "is_structured": lt_info.get("is_structured", False),
+                        "instruments": set()
+                    }
+                underlying_totals[ref]["total_value_usd"] += split_val
+                underlying_totals[ref]["portfolios_involved"].add(pf_id)
+                underlying_totals[ref]["instruments"].add(iname)
+
+        aggregated_breaches = []
+        for ref, data in underlying_totals.items():
+            tot_usd = data["total_value_usd"]
+            weight_pct = (tot_usd / total_wealth_usd * 100.0) if total_wealth_usd > 0 else 0.0
+
+            if weight_pct > max_single_pos_pct:
+                pfs = sorted(list(data["portfolios_involved"]))
+                aggregated_breaches.append({
+                    "underlying_name": ref,
+                    "total_value_usd": round(tot_usd, 2),
+                    "weight_pct": round(weight_pct, 2),
+                    "limit_pct": max_single_pos_pct,
+                    "excess_usd": round((weight_pct - max_single_pos_pct) / 100.0 * total_wealth_usd, 2),
+                    "portfolios_involved": pfs,
+                    "is_multi_portfolio": len(pfs) > 1,
+                    "instruments": sorted(list(data["instruments"]))
+                })
+
+        all_exposures = []
+        for ref, data in underlying_totals.items():
+            tot_usd = data["total_value_usd"]
+            weight_pct = (tot_usd / total_wealth_usd * 100.0) if total_wealth_usd > 0 else 0.0
+            pfs = sorted(list(data["portfolios_involved"]))
+            all_exposures.append({
+                "underlying_name": ref,
+                "total_value_usd": round(tot_usd, 2),
+                "weight_pct": round(weight_pct, 2),
+                "portfolios_involved": pfs,
+                "is_multi_portfolio": len(pfs) > 1,
+                "is_structured": data["is_structured"],
+                "instruments": sorted(list(data["instruments"]))
+            })
+
+        all_exposures = sorted(all_exposures, key=lambda x: x["total_value_usd"], reverse=True)
+
+        return {
+            "client_id": client_id,
+            "snapshot_date": snapshot_date,
+            "total_wealth_usd": round(total_wealth_usd, 2),
+            "max_single_position_pct": max_single_pos_pct,
+            "aggregated_breaches": aggregated_breaches,
+            "has_cross_portfolio_breaches": any(b["is_multi_portfolio"] for b in aggregated_breaches),
+            "underlying_exposures": all_exposures
+        }
+
     def compute_ltv(self, client_id: str, snapshot_date: str) -> Dict[str, Any]:
         """
         Computes credit facility LTV, headroom, margin call proximity, and multi-snapshot trend.
@@ -510,6 +591,111 @@ class DeterministicAnalytics:
             "trend_points": trend_points
         }
 
+    def compute_portfolio_returns(
+        self, 
+        client_id: str, 
+        snapshot_date: str, 
+        portfolio_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Computes exact point-in-time deterministic portfolio returns from baseline (2025-12-31)
+        and period-on-period return specific to the selected snapshot date.
+        Supports both consolidated client wealth and individual portfolio sleeve attribution.
+        """
+        snapshot_dates = self.repo.get_snapshot_dates()
+        baseline_date = snapshot_dates[0] if snapshot_dates else "2025-12-31"
+
+        # Determine previous snapshot date
+        if snapshot_date in snapshot_dates:
+            curr_idx = snapshot_dates.index(snapshot_date)
+            prev_date = snapshot_dates[curr_idx - 1] if curr_idx > 0 else None
+        else:
+            prev_date = None
+
+        # Fetch holdings for client (or single portfolio if specified)
+        if portfolio_id:
+            h_curr = self.repo.get_holdings(portfolio_id, snapshot_date)
+            h_base = self.repo.get_holdings(portfolio_id, baseline_date)
+            h_prev = self.repo.get_holdings(portfolio_id, prev_date) if prev_date else h_base
+        else:
+            h_curr = self.repo.get_all_holdings_for_client(client_id, snapshot_date)
+            h_base = self.repo.get_all_holdings_for_client(client_id, baseline_date)
+            h_prev = self.repo.get_all_holdings_for_client(client_id, prev_date) if prev_date else h_base
+
+        curr_aum_usd = sum(h["market_value_usd"] for h in h_curr)
+        base_aum_usd = sum(h["market_value_usd"] for h in h_base)
+        prev_aum_usd = sum(h["market_value_usd"] for h in h_prev) if prev_date else base_aum_usd
+
+        curr_aum_base = sum(h["market_value_base"] for h in h_curr)
+        base_aum_base = sum(h["market_value_base"] for h in h_base)
+        prev_aum_base = sum(h["market_value_base"] for h in h_prev) if prev_date else base_aum_base
+
+        # Cumulative Return (since 2025-12-31 baseline)
+        cum_ret_usd = curr_aum_usd - base_aum_usd
+        cum_ret_pct = (cum_ret_usd / base_aum_usd * 100.0) if base_aum_usd > 0 else 0.0
+
+        # Period-on-Period Return (vs previous snapshot)
+        if prev_date and prev_date != snapshot_date:
+            period_ret_usd = curr_aum_usd - prev_aum_usd
+            period_ret_pct = (period_ret_usd / prev_aum_usd * 100.0) if prev_aum_usd > 0 else 0.0
+            period_label = f"vs {prev_date}"
+        else:
+            period_ret_usd = 0.0
+            period_ret_pct = 0.0
+            period_label = "Baseline Inception"
+
+        # Sleeve breakdowns for multi-portfolio clients
+        portfolios = self.repo.get_portfolios_for_client(client_id)
+        sleeve_returns = []
+        for p in portfolios:
+            pid = p["portfolio_id"]
+            p_curr_h = self.repo.get_holdings(pid, snapshot_date)
+            p_base_h = self.repo.get_holdings(pid, baseline_date)
+            p_prev_h = self.repo.get_holdings(pid, prev_date) if prev_date else p_base_h
+
+            p_curr_usd = sum(x["market_value_usd"] for x in p_curr_h)
+            p_base_usd = sum(x["market_value_usd"] for x in p_base_h)
+            p_prev_usd = sum(x["market_value_usd"] for x in p_prev_h) if prev_date else p_base_usd
+
+            p_cum_pct = ((p_curr_usd - p_base_usd) / p_base_usd * 100.0) if p_base_usd > 0 else 0.0
+            p_per_pct = ((p_curr_usd - p_prev_usd) / p_prev_usd * 100.0) if (prev_date and p_prev_usd > 0) else 0.0
+
+            sleeve_returns.append({
+                "portfolio_id": pid,
+                "portfolio_name": p.get("portfolio_name", pid),
+                "mandate_code": p.get("mandate_code", "BAL"),
+                "base_currency": p.get("base_currency", "USD"),
+                "aum_usd": round(p_curr_usd, 2),
+                "cum_return_pct": round(p_cum_pct, 2),
+                "cum_return_usd": round(p_curr_usd - p_base_usd, 2),
+                "period_return_pct": round(p_per_pct, 2),
+                "period_return_usd": round(p_curr_usd - p_prev_usd, 2)
+            })
+
+        return {
+            "client_id": client_id,
+            "portfolio_id": portfolio_id,
+            "snapshot_date": snapshot_date,
+            "baseline_date": baseline_date,
+            "previous_snapshot_date": prev_date,
+            "period_label": period_label,
+            "current_aum_usd": round(curr_aum_usd, 2),
+            "baseline_aum_usd": round(base_aum_usd, 2),
+            "cumulative_return_usd": round(cum_ret_usd, 2),
+            "cumulative_return_pct": round(cum_ret_pct, 2),
+            "period_return_usd": round(period_ret_usd, 2),
+            "period_return_pct": round(period_ret_pct, 2),
+            "current_aum_base": round(curr_aum_base, 2),
+            "baseline_aum_base": round(base_aum_base, 2),
+            "sleeve_returns": sleeve_returns,
+            "evidence_metadata": {
+                "source_function": "compute_portfolio_returns",
+                "snapshot_date": snapshot_date,
+                "baseline_date": baseline_date,
+                "previous_snapshot_date": prev_date
+            }
+        }
+
     def match_events_to_holdings(
         self, 
         client_id: str, 
@@ -660,12 +846,27 @@ class DeterministicAnalytics:
 
         overrides = []
         preferences = []
+        constraint_keywords = [
+            "did not want", "does not want", "do not want", "refused", "not tied to", 
+            "do not sell", "not sell", "avoid", "at a loss", "loss", "unwilling to sell", 
+            "not make any changes", "must hold", "emotional attachment", "dealing restrictions",
+            "cannot sell", "closed period", "won't sell", "will not sell", "waiver on file", 
+            "suitability waiver", "preserve capital", "firm on retiring", "exclusive", 
+            "legacy shareholding", "sentimental reasons", "gated", "without touching capital"
+        ]
+        preference_keywords = [
+            "interested in", "looking at", "prefers", "preference", "priority", "positive on", 
+            "optimistic", "buying opportunity", "more of", "aggressive", "safe and boring", 
+            "sustainability", "property purchase", "foundation", "tuition", "deployment", 
+            "yield ideas", "redevelopment", "family office", "succession"
+        ]
+
         for n in notes:
             text = n.get("note", "")
             text_lower = text.lower()
             
             # Detect standing constraints & overrides
-            if "did not want" in text_lower or "refused" in text_lower or "not tied to" in text_lower or "do not sell" in text_lower or "avoid" in text_lower:
+            if any(kw in text_lower for kw in constraint_keywords):
                 overrides.append({
                     "note_id": n.get("note_id"),
                     "date": n.get("note_date"),
@@ -673,7 +874,7 @@ class DeterministicAnalytics:
                     "type": "hard_constraint",
                     "summary": text
                 })
-            elif "interested in" in text_lower or "looking at" in text_lower or "prefers" in text_lower or "priority" in text_lower:
+            elif any(kw in text_lower for kw in preference_keywords):
                 preferences.append({
                     "note_id": n.get("note_id"),
                     "date": n.get("note_date"),

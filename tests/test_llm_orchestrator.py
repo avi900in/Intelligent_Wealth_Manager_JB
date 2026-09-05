@@ -72,3 +72,18 @@ def test_all_20_clients_run_orchestrator(orchestrator):
         assert res["urgency_score"] >= 0.0
         assert res["urgency_score"] <= 100.0
         assert isinstance(res["cross_specialist_optimizations"], list)
+
+def test_recommendations_have_time_horizon(orchestrator):
+    result = orchestrator.run_client("CL-0001", "2026-08-26")
+    recs = result["recommendations"]
+    assert len(recs) > 0
+    for r in recs:
+        assert "time_horizon" in r
+        assert r["time_horizon"] is not None
+        assert len(r["time_horizon"]) > 0
+
+    # Also check life event agent has dynamic due date
+    life_event_recs = [r for r in recs if r.get("agent") == "life_event"]
+    if life_event_recs:
+        assert "Hold liquid cash till" in life_event_recs[0]["time_horizon"] or "2026-06-30" in life_event_recs[0]["time_horizon"]
+

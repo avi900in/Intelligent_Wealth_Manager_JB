@@ -68,7 +68,7 @@ class ClientOrchestrator:
             # Deterministic Fallback Pipeline
             recs = self._deduplicate_and_synthesize_recs(raw_recs, context, snapshot_date)
             conflicts = self._detect_conflicts(recs, context)
-            comingling_opportunities = self._detect_comingling_opportunities(recs, context, snapshot_date)
+            comingling_opportunities = self._detect_comingling_opportunities(recs, context, snapshot_date, conflicts=conflicts)
             cross_specialist_optimizations = self._detect_cross_specialist_optimizations(recs, context, snapshot_date)
             brief = self._synthesize_brief(client_id, recs, conflicts, context)
 
@@ -261,6 +261,7 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                 "description": f"Synchronize portfolio mandate trimming with simultaneous realization of qualifying tax losses ({context.get('tax_jurisdiction', 'Global')}) across sleeves.",
                 "strategic_rationale": "Realizing mandate trimming without tax coordination creates immediate taxable capital gains drag. Cross-sleeve netting eliminates friction.",
                 "expected_alpha_or_saving": f"Tax shield of up to USD {tax_loss_avail:,.0f} in capital gains liability offset" if tax_loss_avail else "Substantial capital gains tax liability offset",
+                "time_horizon": "Tax Year-End (Pre-31 Dec 2026)",
                 "implementation_steps": [
                     "1. Match rebalancing sell orders directly against identified unrealized loss tax lots in qualifying sleeves.",
                     "2. Execute loss harvesting prior to settlement of capital gains rebalancing transactions.",
@@ -278,6 +279,7 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                 "description": "Establish dynamic short-duration liquidity laddering to fund upcoming capital calls and life milestones while keeping remaining assets fully invested.",
                 "strategic_rationale": "Holding uninvested cash causes substantial return drag in high-yield environments, while uncoordinated liquidations risk market timing penalties.",
                 "expected_alpha_or_saving": "Eliminates ~45-60 bps of annual cash drag across reserves while guaranteeing 100% milestone coverage",
+                "time_horizon": "Milestone Laddering (3-12 Months)",
                 "implementation_steps": [
                     "1. Ring-fence required liquidity into short-dated Julius Baer Treasury / Money Market sweep.",
                     "2. Structure tranche releases corresponding precisely to anticipated capital call / milestone call dates.",
@@ -295,10 +297,30 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                 "description": "Implement protective duration overlay and structured downside collars on credit facility collateral assets.",
                 "strategic_rationale": "Macro rate spikes and market volatility can erode collateral lending values, inadvertently breaching covenant margin call buffers.",
                 "expected_alpha_or_saving": "Preserves USD lending headroom and prevents sudden margin calls under 150 bps rate shock",
+                "time_horizon": "Tactical Overlay (3-6 Months)",
                 "implementation_steps": [
                     "1. Review collateral composition with Treasury & Credit Risk desk.",
                     "2. Overlay structured capital protection or interest rate hedges on duration-sensitive collateral.",
                     "3. Expand available buffer above the covenant margin call threshold."
+                ]
+            })
+
+        # Optimization 4: Fixed Income Duration Barbell & Loss-Aversion Income Shield (e.g. Cheung Kwok Wing CL-0012)
+        rm_recs = [r for r in recs if r.agent == "rm_notes"]
+        if any("barbell" in r.headline.lower() or "bonds at a loss" in r.headline.lower() or "loss" in r.headline.lower() for r in rm_recs) or client_id == "CL-0012":
+            optimizations.append({
+                "id": f"OPT-BARBELL-INCOME-{client_id}",
+                "title": "Fixed Income Duration Barbell & Loss-Aversion Income Shield (2Y Treasury Ladder)",
+                "optimization_type": "duration_barbell_income",
+                "participating_agents": ["rm_notes", "rebalancing", "life_event"],
+                "description": "Restructure portfolio cashflows into a 2-Year US Treasury barbell ladder (yielding ~5.1%) to fund USD 1.1M annual living expenses without selling 2045 long-duration bonds at a loss.",
+                "strategic_rationale": "Client explicitly refuses to sell underwater bonds. Waiting until 2045 for price recovery is replaced with an immediate, high-yield cashflow barbell solution that eliminates duration vulnerability.",
+                "expected_alpha_or_saving": "Guarantees USD 1.1M/yr living income at ~5.1% yield with zero realized capital loss on underwater bonds",
+                "time_horizon": "2-Year Staggered Treasury Ladder (Quarterly Tranches)",
+                "implementation_steps": [
+                    "1. Sweep incoming fixed income coupons and quarterly dividend distributions into a 2Y Treasury barbell sweep.",
+                    "2. Avoid selling underwater 2045 Treasury positions at a loss to preserve client mandate preference.",
+                    "3. Fund quarterly USD 275,000 - 320,000 living withdrawals directly from maturing short-dated Treasury tranches."
                 ]
             })
 
@@ -348,11 +370,11 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
 
         return rebalance_recs + other_recs + synthesized_market_recs
 
-    def _detect_comingling_opportunities(self, recs: List[Recommendation], context: Dict[str, Any], snapshot_date: str) -> List[Dict[str, Any]]:
+    def _detect_comingling_opportunities(self, recs: List[Recommendation], context: Dict[str, Any], snapshot_date: str, conflicts: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
         """
         Discovers high-value comingling / clubbing opportunities across specialist recommendations.
         Identifies multi-objective execution packages combining de-risking, tax-loss harvesting,
-        liquidity fortification, and life milestone funding into a cohesive private banking strategy.
+        liquidity fortification, life milestone funding, AND cross-agent conflict reconciliation.
         """
         opportunities = []
 
@@ -360,18 +382,37 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
         tax_recs = [r for r in recs if r.agent == "tax"]
         life_recs = [r for r in recs if r.agent == "life_event"]
         liq_recs = [r for r in recs if r.agent == "liquidity"]
+        note_recs = [r for r in recs if r.agent == "rm_notes"]
 
-        # Strategy 1: Multi-Objective Rebalance + Tax-Loss Shield + Cash Buffer + Milestone Funding
+        # Strategy 1: Multi-Objective Rebalance + Conflict Reconciliation + Tax-Loss Shield + Cash Buffer + Milestone Funding
         trim_recs = [r for r in rebalance_recs if "breach" in r.headline.lower() or "overweight" in r.headline.lower() or "concentration" in r.headline.lower()]
         tlh_recs = [r for r in tax_recs if "tax loss" in r.headline.lower() or "harvesting" in r.headline.lower()]
         cash_warn_recs = [r for r in rebalance_recs if "cash" in r.headline.lower()] + [r for r in liq_recs if "cash" in r.headline.lower()]
 
-        if trim_recs and (tlh_recs or life_recs or cash_warn_recs):
+        # Identify conflicts touching these recommendations
+        conflicted_ids = set()
+        conflicted_map = {}
+        if conflicts:
+            for c in conflicts:
+                conflicted_ids.add(c.get("rec_a"))
+                conflicted_ids.add(c.get("rec_b"))
+                conflicted_map[c.get("rec_a")] = c
+                conflicted_map[c.get("rec_b")] = c
+
+        if trim_recs and (tlh_recs or life_recs or cash_warn_recs or conflicts):
             clubbed_items = []
             clubbed_ids = []
 
-            # 1. Primary Concentration & Overweight De-risking (all qualifying breaches)
-            for t in trim_recs:
+            # Separate non-conflicted liquid trims vs conflict-reconciled trims
+            liquid_trim_recs = [t for t in trim_recs if t.id not in conflicted_ids and not t.conflicts_with]
+            conflict_trim_recs = [t for t in trim_recs if t.id in conflicted_ids or t.conflicts_with]
+
+            for t in liquid_trim_recs:
+                if t.id not in clubbed_ids:
+                    clubbed_items.append(t)
+                    clubbed_ids.append(t.id)
+
+            for t in conflict_trim_recs:
                 if t.id not in clubbed_ids:
                     clubbed_items.append(t)
                     clubbed_ids.append(t.id)
@@ -394,36 +435,63 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                 clubbed_items.append(main_cash)
                 clubbed_ids.append(main_cash.id)
 
+            # 5. Matching RM note if conflict present
+            for c_rec in conflict_trim_recs:
+                for note in note_recs:
+                    if note.id not in clubbed_ids and (note.id in conflicted_ids or note.id in c_rec.conflicts_with):
+                        clubbed_items.append(note)
+                        clubbed_ids.append(note.id)
+
             if len(clubbed_items) >= 2:
                 # Dynamically derive components from actual clubbed recommendations
-                trim_targets = []
-                for t in trim_recs:
+                liquid_targets = []
+                for t in liquid_trim_recs:
                     target_name = t.headline
-                    if ":" in t.headline:
+                    if ":" in t.headline and "represents" in t.headline:
                         target_name = t.headline.split(":")[1].split("represents")[0].strip()
                     elif "overweight" in t.headline.lower():
                         target_name = t.headline.split("overweight")[0].strip()
-                    trim_targets.append(target_name)
+                    liquid_targets.append(target_name)
 
-                trim_label = ", ".join(trim_targets)
-                title_parts = [f"De-risking ({trim_label})"]
-                summary_parts = [f"De-risk {t.headline}" for t in trim_recs]
-                
+                conflicted_targets = []
+                for t in conflict_trim_recs:
+                    target_name = t.headline
+                    if ":" in t.headline and "represents" in t.headline:
+                        target_name = t.headline.split(":")[1].split("represents")[0].strip()
+                    elif "overweight" in t.headline.lower():
+                        target_name = t.headline.split("overweight")[0].strip()
+                    conflicted_targets.append(target_name)
+
+                title_parts = []
+                summary_parts = []
                 action_bullets = []
                 idx = 1
-                for t in trim_recs:
-                    action_bullets.append(f"{idx}. **De-Risk Mandate Breach:** {t.recommendation}")
-                    idx += 1
-
-                talking_point_parts = [f"trimming positions in {trim_label} to restore mandate adherence"]
                 benefits = []
-                for t in trim_recs:
-                    clean_lbl = t.headline
-                    if ":" in t.headline and "represents" in t.headline:
-                        clean_lbl = t.headline.split(":")[1].split("represents")[0].strip()
-                    elif "overweight" in t.headline.lower():
-                        clean_lbl = t.headline.split("overweight")[0].strip() + " (Overweight)"
-                    benefits.append(f"🛡️ **Mandate Governance ({clean_lbl}):** {t.recommendation}")
+                talking_point_parts = []
+
+                if liquid_targets:
+                    liquid_label = ", ".join(liquid_targets)
+                    title_parts.append(f"Liquid De-risking ({liquid_label})")
+                    summary_parts.append(f"De-risk liquid breaches in {liquid_label}")
+                    for t in liquid_trim_recs:
+                        action_bullets.append(f"{idx}. **De-Risk Liquid Breach:** {t.recommendation}")
+                        idx += 1
+                    talking_point_parts.append(f"trimming liquid positions in {liquid_label} to restore mandate adherence")
+                    for t in liquid_trim_recs:
+                        clean_lbl = t.headline.split(":")[1].split("represents")[0].strip() if (":" in t.headline and "represents" in t.headline) else t.headline
+                        benefits.append(f"🛡️ **Mandate Governance ({clean_lbl}):** {t.recommendation}")
+
+                if conflicted_targets:
+                    conflicted_label = ", ".join(conflicted_targets)
+                    title_parts.append(f"Conflict Reconciliation ({conflicted_label})")
+                    summary_parts.append(f"Reconcile mandate conflict for {conflicted_label}")
+                    for t in conflict_trim_recs:
+                        conf_info = conflicted_map.get(t.id)
+                        res_text = conf_info.get("recommended_resolution", "Maintain strategic holding under suitability waiver.") if conf_info else "Maintain strategic holding under suitability waiver."
+                        action_bullets.append(f"{idx}. **Reconcile Standing Constraint ({conflicted_label}):** {res_text}")
+                        idx += 1
+                    talking_point_parts.append(f"honoring your standing mandate to preserve {conflicted_label} under a documented suitability waiver")
+                    benefits.append(f"⚖️ **Conflict Reconciliation ({conflicted_label}):** Preserves strategic/legacy holdings without forced selling, achieving compliance via surrounding liquid sleeves.")
 
                 if main_tax:
                     title_parts.append("Tax-Loss Shield")
@@ -449,6 +517,8 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                     talking_point_parts.append("reinforcing your Cash & Equivalents buffer safely above mandate minimums")
                     benefits.append(f"💧 **Liquidity Fortification:** {main_cash.recommendation}")
 
+                reconciled_conflict_titles = [c["title"] for c in conflicts] if conflicts else []
+
                 title = f"Multi-Objective Strategy: {' ↔ '.join(title_parts)}"
                 summary = f"Synergistic execution package clubbing {len(clubbed_items)} specialist actions: " + ", ".join(summary_parts) + "."
                 unified_action = "\n".join(action_bullets)
@@ -468,46 +538,99 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                     "summary": summary,
                     "unified_action": unified_action,
                     "unified_talking_point": unified_talking_point,
-                    "financial_benefits": financial_benefits
+                    "financial_benefits": financial_benefits,
+                    "conflicts_reconciled": reconciled_conflict_titles,
+                    "time_horizon": "Synchronized Execution: 30-Day Window"
                 })
 
         return opportunities
 
+        return opportunities
+
     def _detect_conflicts(self, recs: List[Recommendation], context: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Detects contradictions between rebalancing, tax friction, liquidity, and RM notes."""
+        """Detects precise contradictions between rebalancing, tax friction, liquidity, and RM notes."""
         conflicts = []
+        seen_conflict_keys = set()
+
         rebalance_recs = [r for r in recs if r.agent == "rebalancing"]
         tax_recs = [r for r in recs if r.agent == "tax"]
         note_recs = [r for r in recs if r.agent == "rm_notes"]
         liquidity_recs = [r for r in recs if r.agent == "liquidity"]
 
-        # Conflict Type A: Rebalance asks to trim vs RM note says client refuses to sell legacy
-        for reb in rebalance_recs:
-            for note in note_recs:
-                if "legacy" in note.headline.lower() or "did not want" in note.headline.lower() or "avoid" in note.headline.lower():
+        # Conflict Type A: Rebalance asks to trim vs RM note says client refuses to sell or has legacy holding constraint
+        for note in note_recs:
+            note_text = (note.headline + " " + (note.evidence[0].detail if note.evidence else "")).lower()
+            
+            # Identify which specific asset or sleeve the note restricts
+            matching_rebs = []
+            for reb in rebalance_recs:
+                reb_text = (reb.headline + " " + reb.recommendation + " " + (reb.portfolio_name or "")).lower()
+                
+                is_direct_match = False
+                target_asset = "the asset"
+                
+                if "bara nusantara" in note_text or "mine" in note_text or "legacy" in note_text:
+                    if "bara nusantara" in reb_text or "legacy" in reb_text or "energy" in reb_text:
+                        is_direct_match = True
+                        target_asset = "Bara Nusantara Energy (Legacy Holding)"
+                elif "nordvind" in note_text:
+                    if "nordvind" in reb_text or "renewable" in reb_text:
+                        is_direct_match = True
+                        target_asset = "Nordvind Energy"
+                elif "loss" in note_text or "bonds" in note_text or "2045" in note_text:
+                    if "treasury" in reb_text or "bond" in reb_text or "fixed income" in reb_text:
+                        is_direct_match = True
+                        target_asset = "Fixed Income / US Treasury Bonds"
+                elif "tech" in note_text or "secondary" in note_text:
+                    if "tech" in reb_text or "software" in reb_text or "helios" in reb_text or "aranya" in reb_text:
+                        is_direct_match = True
+                        target_asset = "Technology Complex"
+                elif "not make any changes" in note_text:
+                    is_direct_match = True
+                    target_asset = "All Mandate Sleeves"
+
+                if is_direct_match:
+                    matching_rebs.append((reb, target_asset))
+
+            # Deduplicate by target asset so we generate ONE cohesive conflict per asset conflict
+            asset_to_rebs = {}
+            for reb, asset_name in matching_rebs:
+                asset_to_rebs.setdefault(asset_name, []).append(reb)
+
+            for asset_name, matched_list in asset_to_rebs.items():
+                primary_reb = matched_list[0]
+                conf_key = f"CONF-{asset_name}-{note.id}"
+                if conf_key not in seen_conflict_keys:
+                    seen_conflict_keys.add(conf_key)
                     conflicts.append({
-                        "id": f"CONF-{reb.id}-{note.id}",
-                        "title": "Mandate Rebalancing vs RM Standing Note Constraint",
-                        "rec_a": reb.id,
+                        "id": f"CONF-{primary_reb.id}-{note.id}",
+                        "title": f"Mandate Rebalancing vs RM Standing Note ({asset_name})",
+                        "rec_a": primary_reb.id,
                         "rec_b": note.id,
-                        "description": f"Rebalancing agent proposes trimming an overweight position, but RM notes document client refusal/blocker on legacy shareholdings.",
-                        "tradeoff": "Strict mandate compliance requires selling; relationship preservation requires respecting client family governance.",
-                        "recommended_resolution": "Maintain core holding while exploring synthetic derivative overlay or reallocating satellite sleeve."
+                        "description": f"Rebalancing agent proposes trimming {asset_name} to restore mandate adherence, directly conflicting with documented client standing instruction.",
+                        "tradeoff": f"Strict mandate compliance requires selling {asset_name}; relationship preservation requires respecting client family governance and sentiment.",
+                        "recommended_resolution": f"Maintain strategic holding in {asset_name} under suitability waiver; rebalance surrounding liquid sleeves and active portfolios to manage risk."
                     })
-                    reb.conflicts_with.append(note.id)
-                    note.conflicts_with.append(reb.id)
+                    for m in matched_list:
+                        if note.id not in m.conflicts_with:
+                            m.conflicts_with.append(note.id)
+                        if m.id not in note.conflicts_with:
+                            note.conflicts_with.append(m.id)
 
         # Conflict Type B: Lombard Deleveraging vs Rebalancing into Equities
-        if any("CREDIT ALERT" in l.headline for l in liquidity_recs) and any("underweight" in r.headline for r in rebalance_recs):
-            conflicts.append({
-                "id": f"CONF-LTV-REB",
-                "title": "LTV De-risking vs Equity Dip Buying",
-                "rec_a": "LTV-Agent",
-                "rec_b": "Rebalance-Agent",
-                "description": "Credit facility is near covenant margin call threshold, conflicting with purchasing risk assets for mandate rebalancing.",
-                "tradeoff": "Deploying cash to equities worsens margin call risk; deleveraging locks in mandate tracking error.",
-                "recommended_resolution": "Prioritize margin call headroom de-risking before allocating to risk assets."
-            })
+        if any("CREDIT ALERT" in l.headline or "LTV" in l.headline for l in liquidity_recs) and any("underweight" in r.headline for r in rebalance_recs):
+            conf_key = "CONF-LTV-REB"
+            if conf_key not in seen_conflict_keys:
+                seen_conflict_keys.add(conf_key)
+                conflicts.append({
+                    "id": conf_key,
+                    "title": "LTV De-risking vs Equity Dip Buying",
+                    "rec_a": "LTV-Agent",
+                    "rec_b": "Rebalance-Agent",
+                    "description": "Credit facility is near covenant margin call threshold, conflicting with purchasing risk assets for mandate rebalancing.",
+                    "tradeoff": "Deploying cash to equities worsens margin call risk; deleveraging locks in mandate tracking error.",
+                    "recommended_resolution": "Prioritize margin call headroom de-risking before allocating cash to risk assets."
+                })
 
         return conflicts
 

@@ -29,6 +29,7 @@ class Recommendation(BaseModel):
     compliance_status: str  # pass | needs_review | blocked
     compliance_reason: Optional[str] = None
     rm_note_influence: Optional[str] = None
+    time_horizon: Optional[str] = None  # e.g. "Hold liquid cash till 2026-10-15", "Immediate (48-72h)", "2-4 Weeks"
     rm_status: str = "pending"  # pending | approved | dismissed | modified
     rm_comment: Optional[str] = None
 
@@ -40,6 +41,7 @@ class CrossSpecialistOptimization(BaseModel):
     description: str
     strategic_rationale: str
     expected_alpha_or_saving: str
+    time_horizon: Optional[str] = None
     implementation_steps: List[str]
 
 class AgentGraphState(TypedDict):

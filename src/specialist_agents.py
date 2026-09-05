@@ -128,7 +128,8 @@ class BaseLLMAgent:
                 conflicts_with=item.get("conflicts_with", []),
                 compliance_status=str(item.get("compliance_status", "pass")).lower(),
                 compliance_reason=item.get("compliance_reason"),
-                rm_note_influence=item.get("rm_note_influence")
+                rm_note_influence=item.get("rm_note_influence"),
+                time_horizon=item.get("time_horizon")
             ))
         return recs
 
@@ -157,13 +158,21 @@ class RebalancingAgent(BaseLLMAgent):
                 "concentration_results": conc
             })
 
+        cross_conc = self.analytics.compute_cross_portfolio_concentration(client_id, snapshot_date)
+        if cross_conc.get("has_cross_portfolio_breaches"):
+            tool_facts.append({
+                "cross_portfolio_concentration": cross_conc
+            })
+
         system_prompt = """You are the Senior Portfolio Rebalancing Strategist at Bank Julius Baer.
 Your role: Review deterministic portfolio drift and concentration tool outputs against agreed investment mandates.
+Evaluate single-sleeve breaches and whole-client cross-portfolio concentrations across multiple accounts and look-through structured products.
 Strict rules:
 1. NEVER invent or recalculate raw financial figures; cite the provided deterministic numbers.
 2. For each breach (upper breach, lower breach, single position concentration limit), produce a structured recommendation conforming to §6.
 3. Check standing RM notes for restrictions on legacy holdings or family assets. If an override applies, set compliance_status to 'needs_review'.
 4. Write client-ready talking points in an articulate, prestigious Swiss private banking tone.
+5. Always provide an actionable 'time_horizon' (e.g. 'Phased Execution: 2-4 Weeks', 'Dollar-Cost Average: 60-90 Days', 'Ongoing Surveillance').
 
 Respond ONLY with valid JSON in this schema:
 {
@@ -184,7 +193,8 @@ Respond ONLY with valid JSON in this schema:
       "talking_point": "Client-ready conversational phrasing for the RM",
       "compliance_status": "pass | needs_review | blocked",
       "compliance_reason": "string or null",
-      "rm_note_influence": "string or null"
+      "rm_note_influence": "string or null",
+      "time_horizon": "string"
     }
   ]
 }"""
@@ -226,15 +236,17 @@ Deterministic Tool Facts:
                         max_pct = breach["band_max_pct"]
                         trim_usd = breach["trim_to_target_usd"]
                         headline = f"{ac} overweight at {actual_pct:.1f}% (max band {max_pct:.1f}%) in {pf_name}"
-                        rec_text = f"Trim {ac} by approx USD {trim_usd:,.0f} to restore target allocation."
-                        talk = f"Your {ac} allocation has appreciated to {actual_pct:.1f}%, exceeding our agreed mandate limit of {max_pct:.1f}%. We recommend locking in gains and rebalancing into core defensive assets."
+                        rec_text = f"Trim {ac} by approx USD {trim_usd:,.0f} over a 2-4 week time horizon to restore target allocation."
+                        talk = f"Your {ac} allocation has appreciated to {actual_pct:.1f}%, exceeding our agreed mandate limit of {max_pct:.1f}%. We recommend locking in gains over the next 2-4 weeks and rebalancing into core defensive assets."
+                        horizon = "Phased Execution: 2-4 Weeks (Prior to Quarter End)"
                     else:
                         deficit = breach["deficit_pct"]
                         min_pct = breach["band_min_pct"]
                         add_usd = breach["add_to_target_usd"]
                         headline = f"{ac} underweight at {actual_pct:.1f}% (min band {min_pct:.1f}%) in {pf_name}"
-                        rec_text = f"Add USD {add_usd:,.0f} to {ac} to return within the {min_pct:.1f}% minimum band."
-                        talk = f"Your {ac} exposure is currently {actual_pct:.1f}%, below your mandate threshold of {min_pct:.1f}%. We suggest redeploying liquidity to maintain your strategic benchmark."
+                        rec_text = f"Add USD {add_usd:,.0f} to {ac} across a 60-90 day horizon to return within the {min_pct:.1f}% minimum band."
+                        talk = f"Your {ac} exposure is currently {actual_pct:.1f}%, below your mandate threshold of {min_pct:.1f}%. We suggest redeploying liquidity across a 60-90 day horizon to maintain your strategic benchmark."
+                        horizon = "Staggered Deployment: 60-90 Days (3 Tranches)"
 
                     recs.append(Recommendation(
                         id=make_rec_id("REB", client_id, pf_id, ac, b_type),
@@ -258,7 +270,8 @@ Deterministic Tool Facts:
                         talking_point=talk,
                         compliance_status="pass" if not override_hit else "needs_review",
                         compliance_reason="RM note constraint detected on legacy/asset class holdings" if override_hit else None,
-                        rm_note_influence=f"RM Note Alert: '{override_hit}'" if override_hit else None
+                        rm_note_influence=f"RM Note Alert: '{override_hit}'" if override_hit else None,
+                        time_horizon=horizon
                     ))
 
                 for warn in drift.get("warnings", []):
@@ -286,9 +299,10 @@ Deterministic Tool Facts:
                                 raw_metric_value=actual_pct
                             )
                         ],
-                        recommendation=f"Monitor {ac} allocation. No immediate rebalancing required as position is within tolerance.",
+                        recommendation=f"Monitor {ac} allocation over the next quarter. No immediate rebalancing required as position is within tolerance.",
                         talking_point=f"Your {ac} allocation is currently {actual_pct:.1f}%, touching our mandate boundary limit of {limit_val:.1f}%. We are actively monitoring this sleeve.",
-                        compliance_status="pass"
+                        compliance_status="pass",
+                        time_horizon="Ongoing Surveillance: 3-6 Months"
                     ))
 
                 for s_breach in conc.get("single_breaches", []):
@@ -315,10 +329,44 @@ Deterministic Tool Facts:
                                 raw_metric_value=w_pct
                             )
                         ],
-                        recommendation=f"De-risk position by reducing USD {excess_usd:,.0f} to comply with single-issuer concentration guidelines.",
-                        talking_point=f"Due to recent market movements, {iname} now accounts for {w_pct:.1f}% of your portfolio, surpassing our risk governance cap of {limit_pct:.1f}%. We recommend prudent partial profit-taking.",
+                        recommendation=f"De-risk position by reducing USD {excess_usd:,.0f} over a 2-4 week window to comply with single-issuer concentration guidelines.",
+                        talking_point=f"Due to recent market movements, {iname} now accounts for {w_pct:.1f}% of your portfolio, surpassing our risk governance cap of {limit_pct:.1f}%. We recommend prudent partial profit-taking over the next 2-4 weeks.",
                         compliance_status="needs_review",
-                        compliance_reason="Exceeds single issuer mandate concentration threshold."
+                        compliance_reason="Exceeds single issuer mandate concentration threshold.",
+                        time_horizon="Phased De-risking: 2-4 Weeks"
+                    ))
+
+            for cp_breach in cross_conc.get("aggregated_breaches", []):
+                if cp_breach.get("is_multi_portfolio"):
+                    uname = cp_breach["underlying_name"]
+                    w_pct = cp_breach["weight_pct"]
+                    limit_pct = cp_breach["limit_pct"]
+                    excess_usd = cp_breach["excess_usd"]
+                    pfs_involved = ", ".join(cp_breach["portfolios_involved"])
+
+                    recs.append(Recommendation(
+                        id=make_rec_id("CONC_AGG", client_id, uname[:15]),
+                        client_id=client_id,
+                        portfolio_id=None,
+                        portfolio_name="Aggregated Client Holdings",
+                        agent="rebalancing",
+                        priority="high",
+                        confidence_tier="fact",
+                        headline=f"Cross-Portfolio Concentration: {uname} totals {w_pct:.1f}% across multiple sleeves (limit {limit_pct:.1f}%)",
+                        evidence=[
+                            EvidenceItem(
+                                source_function="compute_cross_portfolio_concentration",
+                                detail=f"Aggregated exposure across {pfs_involved} totals USD {cp_breach['total_value_usd']:,.0f} ({w_pct:.1f}% of total wealth)",
+                                as_of_date=snapshot_date,
+                                threshold_or_band=f"Client Concentration Cap {limit_pct:.1f}%",
+                                raw_metric_value=w_pct
+                            )
+                        ],
+                        recommendation=f"Rebalance cross-sleeve holdings over a 30-day window to trim USD {excess_usd:,.0f} and eliminate invisible aggregate concentration.",
+                        talking_point=f"While individual account limits appear safe, combining your holdings across sleeves reveals that {uname} represents {w_pct:.1f}% of your total wealth. We advise trimming over the next 30 days to align with our {limit_pct:.1f}% risk ceiling.",
+                        compliance_status="needs_review",
+                        compliance_reason="Aggregated multi-portfolio concentration breach.",
+                        time_horizon="Cross-Sleeve Realignment: 30-Day Window"
                     ))
 
         return recs
@@ -349,7 +397,7 @@ Evaluate unrealized gains/losses against the client's tax domicile.
 Strict rules:
 1. In 0% capital gains jurisdictions (Singapore, Hong Kong, UAE, Switzerland private), confirm zero tax drag on rebalancing.
 2. In taxable jurisdictions, flag significant harvestable losses (> USD 50,000) to offset realized capital gains.
-3. Emit structured JSON matching §6."""
+3. Emit structured JSON matching §6, including an actionable 'time_horizon' (e.g. 'Tax Year-End Window: Complete before 31-Dec-2026')."""
 
         user_prompt = f"""Client Tax Domicile: {tax_domicile}
 Snapshot Date: {snapshot_date}
@@ -384,9 +432,10 @@ Tool Tax Facts:
                                 raw_metric_value=harvestable
                             )
                         ],
-                        recommendation=f"Harvest eligible loss lots to offset realized capital gains prior to year-end tax assessment.",
-                        talking_point=f"Given your tax domicile in {tax_domicile}, we have identified approximately USD {harvestable:,.0f} in harvestable losses that can offset realized capital gains without altering your strategic asset allocation.",
-                        compliance_status="pass"
+                        recommendation=f"Harvest eligible loss lots prior to 31-Dec-2026 tax year-end to offset realized capital gains for the current assessment period.",
+                        talking_point=f"Given your tax domicile in {tax_domicile}, we have identified approximately USD {harvestable:,.0f} in harvestable losses. Executing these before 31-Dec-2026 can offset realized capital gains without altering your strategic asset allocation.",
+                        compliance_status="pass",
+                        time_horizon="Tax Year-End Window: Complete before 31-Dec-2026"
                     ))
         return recs
 
@@ -402,7 +451,8 @@ class LifeEventPlanningAgent(BaseLLMAgent):
         
         system_prompt = """You are the Family Office & Life-Event Advisory Director at Bank Julius Baer.
 Evaluate planned cash needs, liquidity milestones, and generational succession goals.
-Generate structured recommendations that ring-fence required liquidity in advance of due dates."""
+Generate structured recommendations that ring-fence required liquidity in advance of due dates.
+Always provide an explicit 'time_horizon' in the format: 'Hold liquid cash till YYYY-MM-DD'."""
 
         user_prompt = f"""Client Life Stage: {context.get('life_stage')}, Stated Objectives: {context.get('objectives')}
 Planned Cash Needs:
@@ -437,9 +487,10 @@ Planned Cash Needs:
                                 raw_metric_value=amt
                             )
                         ],
-                        recommendation=f"Structure liquidity sleeve and ring-fence capital to meet upcoming {desc} without forced position liquidations.",
-                        talking_point=f"With the upcoming requirement of {ccy} {amt:,.0f} for {desc.lower()} in {due_from}, we should ensure that appropriate liquidity is pre-funded to avoid market timing pressure.",
-                        compliance_status="pass"
+                        recommendation=f"Hold liquid cash buffer of {ccy} {amt:,.0f} in short-dated instruments maturing on/before {due_from} to fund {desc} without forced position liquidations.",
+                        talking_point=f"With the upcoming requirement of {ccy} {amt:,.0f} for {desc.lower()} due on {due_from}, we recommend holding and ring-fencing this liquid cash reserve until {due_from} to avoid market timing pressure.",
+                        compliance_status="pass",
+                        time_horizon=f"Hold liquid cash till {due_from}"
                     ))
         return recs
 
@@ -456,7 +507,8 @@ class LiquidityCreditRiskAgent(BaseLLMAgent):
 
         system_prompt = """You are the Chief Credit & Liquidity Risk Officer at Bank Julius Baer.
 Evaluate Lombard loan LTV proximity to margin call thresholds, headroom trends, and private market uncalled capital call coverage.
-Highlight critical margin call risks immediately and propose actionable de-leveraging or liquidity re-allocation steps."""
+Highlight critical margin call risks immediately and propose actionable de-leveraging or liquidity re-allocation steps.
+Always include an explicit 'time_horizon' ('Immediate: Next 48-72 Hours' for margin calls, or 'Hold liquid reserves through Q4 2026' for capital calls)."""
 
         user_prompt = f"""Credit LTV Tool Output:
 {json.dumps(ltv_info, indent=2)}
@@ -492,10 +544,11 @@ Liquidity Runway Tool Output:
                             raw_metric_value=cur_ltv
                         )
                     ],
-                    recommendation="Inject unencumbered collateral or pay down loan balance immediately to restore LTV safety buffer.",
-                    talking_point=f"Your credit facility utilization is currently at {cur_ltv:.1f}%, leaving only a {buf:.1f}% buffer before the covenant margin call threshold of {call_ltv:.1f}%. We recommend a proactive top-up of collateral.",
+                    recommendation="Inject unencumbered collateral or pay down loan balance within 48-72 hours to restore LTV safety buffer.",
+                    talking_point=f"Your credit facility utilization is currently at {cur_ltv:.1f}%, leaving only a {buf:.1f}% buffer before the covenant margin call threshold of {call_ltv:.1f}%. We recommend an immediate collateral top-up within 48-72 hours.",
                     compliance_status="blocked" if is_crit else "needs_review",
-                    compliance_reason="High risk of covenant breach on Lombard facility."
+                    compliance_reason="High risk of covenant breach on Lombard facility.",
+                    time_horizon="Immediate: Next 48-72 Hours"
                 ))
 
             if runway.get("urgency") in ["CRITICAL", "HIGH"]:
@@ -519,10 +572,11 @@ Liquidity Runway Tool Output:
                             raw_metric_value=cov
                         )
                     ],
-                    recommendation=f"Reposition short-term liquidity buffers to ensure private fund capital calls can be honored seamlessly.",
-                    talking_point=f"We have reviewed your private market commitments (USD {uncalled:,.0f} uncalled). Your current liquidity coverage is {cov:.2f}x. We recommend fortifying liquid reserves ahead of Q4 capital call windows.",
+                    recommendation=f"Reposition short-term liquidity buffers (USD {uncalled:,.0f} uncalled) to hold in liquid reserves through the Q4 2026 capital call window.",
+                    talking_point=f"We have reviewed your private market commitments (USD {uncalled:,.0f} uncalled). Your current liquidity coverage is {cov:.2f}x. We recommend holding liquid cash reserves through the Q4 2026 capital call window to ensure seamless drawdown settlement.",
                     compliance_status="needs_review",
-                    compliance_reason="Liquidity buffer below target reserve threshold."
+                    compliance_reason="Liquidity buffer below target reserve threshold.",
+                    time_horizon="Hold liquid cash through Q4 2026 (Capital Call Window)"
                 ))
         return recs
 
@@ -546,7 +600,7 @@ CRITICAL GOVERNANCE & AUDIT DIRECTIVE:
 2. DO NOT free-associate, assume, or introduce external 2026 geopolitical or market events from parametric memory. If your pre-trained memory disagrees with the event log, the file wins unconditionally.
 3. Ground all macro explanations and transmission calculations in the deterministic evidence cited from the log.
 4. Correlate world market events occurring since the client's last RM interaction ({last_meeting_date or 'recent baseline'}) with specific client holdings and transmission channels.
-5. Provide defensive hedging and tactical overlay insights focusing on fresh market developments."""
+5. Provide defensive hedging and tactical overlay insights focusing on fresh market developments with an explicit 'time_horizon' (e.g. 'Tactical Hedge Tenor: 3 to 6 Months')."""
 
         user_prompt = f"""Client Last RM Contact Date: {last_meeting_date or 'None on record'}
 Evaluation Snapshot Date: {snapshot_date}
@@ -588,11 +642,12 @@ Correlated New Market Events & Affected Holdings (Occurring Post-Last-Meeting):
                             raw_metric_value=exposed_usd
                         )
                     ],
-                    recommendation=f"Review defensive hedges or structured downside protection for positions sensitive to {trans.lower()}.",
+                    recommendation=f"Implement tactical 3-to-6 month defensive hedge or structured downside protection for positions sensitive to {trans.lower()}.",
                     talking_point=(
-                        f"In light of market developments regarding {ev_desc.lower()} ({ev_date}), we have evaluated the transmission channels across your portfolios (USD {exposed_usd:,.0f} exposed) and prepared defensive positioning options."
+                        f"In light of market developments regarding {ev_desc.lower()} ({ev_date}), we have evaluated the transmission channels across your portfolios (USD {exposed_usd:,.0f} exposed) and recommend a tactical 3-to-6 month hedging overlay."
                     ),
-                    compliance_status="pass"
+                    compliance_status="pass",
+                    time_horizon="Tactical Hedge Tenor: 3 to 6 Months (through Q4 2026)"
                 ))
         return recs
 
@@ -608,7 +663,8 @@ class RMNotesAgent(BaseLLMAgent):
 
         system_prompt = """You are the Relationship Intelligence & Client Sentiment Specialist at Bank Julius Baer.
 Extract qualitative constraints, emotional blockers, family dynamics, and standing mandates from free-text RM meeting notes.
-Ensure documented client preferences act as active standing overrides across all algorithmic suggestions."""
+Ensure documented client preferences act as active standing overrides across all algorithmic suggestions.
+Include an explicit 'time_horizon' reflecting client holding period or permanent mandate status."""
 
         user_prompt = f"""Unstructured RM Notes & Extracted Overrides:
 {json.dumps(notes_info, indent=2)}"""
@@ -619,8 +675,31 @@ Ensure documented client preferences act as active standing overrides across all
         if not recs:
             for ov in notes_info.get("standing_overrides", []):
                 summary = ov["summary"]
+                summary_lower = summary.lower()
                 date_str = ov.get("date", "")
                 rm_author = ov.get("rm_name", "RM")
+
+                # Tailor recommendation to the specific constraint type
+                if "loss" in summary_lower or "bond" in summary_lower or "2045" in summary_lower:
+                    headline = "Standing Client Constraint: Avoid selling bonds at a loss; implement 2Y Treasury barbell strategy"
+                    rec_action = "Deploy a short-duration 2Y Treasury barbell ladder (yielding ~5.1%) using incoming coupon cashflows to fund USD 1.1M annual living expenses without realizing losses on long-duration 2045 bonds."
+                    tp = "We fully respect your instruction not to sell bonds at a loss. Rather than waiting until 2045 for paper recovery, we recommend structuring incoming coupon cashflows into a 2-Year Treasury barbell ladder yielding ~5.1% to guarantee your USD 1.1M annual living drawdowns safely."
+                    horizon = "Strategic Mandate: 2Y Treasury Barbell Reinvestment Ladder"
+                elif "legacy" in summary_lower or "mine" in summary_lower or "uncles" in summary_lower:
+                    headline = "Standing Client Constraint: Preserve legacy family shares (Bara Nusantara Energy) without disposal"
+                    rec_action = "Maintain permanent strategic hold on legacy family shares; achieve mandate risk reduction solely through surrounding liquid asset sleeves."
+                    tp = "We remain strictly aligned with your family governance mandate to retain your core shares, focusing our portfolio optimization on non-core sleeves and credit buffers."
+                    horizon = "Strategic Mandate: Multi-Year / Permanent Holding Policy"
+                elif "secondary" in summary_lower or "tech" in summary_lower:
+                    headline = "Standing Client Constraint: Retain technology positions ahead of Q4 secondary sale"
+                    rec_action = "Shield listed technology holdings from liquidation prior to Q4 2026 secondary transaction; utilize temporary Lombard headroom if necessary."
+                    tp = "In line with your secondary transaction timeline for Q4 2026, we are shielding your core technology positions from forced liquidation."
+                    horizon = "Holding Window: Through Q4 2026 Secondary Sale"
+                else:
+                    headline = f"Standing Client Constraint: {summary[:85]}..."
+                    rec_action = "Enforce documented RM constraint across all algorithmic rebalancing and leverage suggestions."
+                    tp = "We remain strictly attentive to your preference to preserve this strategic position while optimizing surrounding asset sleeves."
+                    horizon = "Strategic Mandate: Multi-Year / Permanent Holding Policy"
 
                 recs.append(Recommendation(
                     id=make_rec_id("NOTE", client_id, summary[:25]),
@@ -629,7 +708,7 @@ Ensure documented client preferences act as active standing overrides across all
                     agent="rm_notes",
                     priority="high",
                     confidence_tier="model",
-                    headline=f"Standing Client Constraint: {summary[:90]}...",
+                    headline=headline,
                     evidence=[
                         EvidenceItem(
                             source_function="get_rm_notes",
@@ -639,9 +718,10 @@ Ensure documented client preferences act as active standing overrides across all
                             raw_metric_value=1.0
                         )
                     ],
-                    recommendation="Enforce documented RM constraint across all algorithmic rebalancing and leverage suggestions.",
-                    talking_point="We remain strictly attentive to your preference to preserve this strategic position while optimizing surrounding asset sleeves.",
+                    recommendation=rec_action,
+                    talking_point=tp,
                     compliance_status="pass",
-                    rm_note_influence="Active standing constraint that overrides raw quantitative optimization."
+                    rm_note_influence="Active standing constraint that overrides raw quantitative optimization.",
+                    time_horizon=horizon
                 ))
         return recs

@@ -37,14 +37,23 @@ def get_julius_baer_css() -> str:
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Ensure Streamlit top header is transparent and does not obscure content */
-header[data-testid="stHeader"] {
-    background: transparent !important;
-    color: var(--jb-gold-primary) !important;
+/* Completely Hide Streamlit Default Header, Toolbar, and Menus */
+header[data-testid="stHeader"],
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+.stAppToolbar,
+#MainMenu,
+footer {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 .block-container {
-    padding-top: 4.5rem !important;
+    padding-top: 1.25rem !important;
     padding-bottom: 2rem !important;
 }
 
@@ -335,9 +344,9 @@ def render_jb_header(rm_name: str = "Priscilla Ong", rm_id: str = "RM-SG-014", d
             </div>
             <div>
                 <div class="jb-brand-title" style="font-size: 1.25rem;">
-                    Bank Julius Baer & Co. Ltd.
+                    JB Pulse — Wealth Intelligence
                 </div>
-                <div class="jb-brand-subtitle" style="font-size: 0.72rem;">Private Wealth Intelligence & RM Decision Support Engine</div>
+                <div class="jb-brand-subtitle" style="font-size: 0.72rem;">Bank Julius Baer & Co. Ltd. • RM Decision Support & Advisory Engine</div>
             </div>
         </div>
     </div>

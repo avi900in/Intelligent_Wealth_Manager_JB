@@ -1,5 +1,4 @@
 [theme]
-base = "dark"
 primaryColor = "#C5A880"
 backgroundColor = "#081426"
 secondaryBackgroundColor = "#0F243E"
@@ -13,3 +12,6 @@ enableXsrfProtection = false
 
 [browser]
 gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"

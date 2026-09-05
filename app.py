@@ -18,10 +18,16 @@ from src.orchestrator import ClientOrchestrator, BookPrioritizer
 from src.vector_store import WealthVectorStore
 from src.julius_baer_theme import get_julius_baer_css, render_jb_header
 from src.llm_engine import LLMEngine
+from src.cockpit_modules import (
+    render_stress_testing_lab,
+    render_trigger_conversation_engine,
+    render_client_digital_twin,
+    render_explainable_ai
+)
 
 # Set Streamlit Page Configuration
 st.set_page_config(
-    page_title="Julius Baer — Wealth Intelligence Cockpit",
+    page_title="JB Pulse — Wealth Intelligence",
     page_icon="🏦",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -122,9 +128,9 @@ if not st.session_state.authenticated:
                     <rect width="24" height="24" rx="4" fill="#C5A880"/>
                     <path d="M7 6H17V9H13V18H10V9H7V6Z" fill="#081426"/>
                 </svg>
-                Bank Julius Baer
+                JB Pulse
             </div>
-            <div class="jb-login-subtitle">Private Wealth Intelligence RM Portal</div>
+            <div class="jb-login-subtitle">Wealth Intelligence RM Portal • Bank Julius Baer</div>
             <div class="jb-login-badge">🔐 Relationship Manager Authentication Required</div>
         </div>
         """, unsafe_allow_html=True)
@@ -133,7 +139,7 @@ if not st.session_state.authenticated:
             user_input = st.text_input("User Name", value="Priscilla Ong", placeholder="Enter RM User Name")
             pass_input = st.text_input("Password", type="password", value="••••••••", placeholder="Enter your secure password")
             
-            submit_login = st.form_submit_button("🔐 Sign In to Wealth Intelligence Cockpit", use_container_width=True)
+            submit_login = st.form_submit_button("🔐 Sign In to JB Pulse", use_container_width=True)
             
             if submit_login:
                 if user_input.strip():
@@ -266,6 +272,43 @@ st.markdown(render_jb_header(
 ), unsafe_allow_html=True)
 
 # ---------------------------------------------------------
+# TOP NAVIGATION: TOP-RIGHT HAMBURGER MENU & BREADCRUMB
+# ---------------------------------------------------------
+NAV_MODULES = [
+    "🏛️ JB Pulse - Wealth Intelligence",
+    "🧪 Portfolio Stress Testing Lab",
+    "💬 Trigger-to-Conversation Engine",
+    "👤 Client Digital Twin",
+    "🔍 Explainable AI"
+]
+
+if "active_nav_module" not in st.session_state:
+    st.session_state.active_nav_module = "🏛️ JB Pulse - Wealth Intelligence"
+
+nav_bar_col1, nav_bar_col2 = st.columns([5.5, 2.5])
+
+with nav_bar_col1:
+    st.markdown(f"""
+    <div style="display: flex; align-items: center; height: 100%; padding: 0.35rem 0;">
+        <span style="font-size: 0.8rem; color: #C5A059; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; margin-right: 0.5rem;">Active Workspace:</span>
+        <span class="jb-badge jb-badge-fact" style="font-size: 0.85rem; font-weight: 600; padding: 0.25rem 0.65rem;">
+            {st.session_state.active_nav_module}
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+with nav_bar_col2:
+    with st.popover("☰ Navigation Menu", use_container_width=True):
+        st.markdown("<div style='font-size: 0.72rem; color: #C5A059; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem;'>Switch Advisory Workspace</div>", unsafe_allow_html=True)
+        for idx, mod in enumerate(NAV_MODULES):
+            is_active = (st.session_state.active_nav_module == mod)
+            if st.button(mod, key=f"pop_nav_btn_{idx}", use_container_width=True, type="primary" if is_active else "secondary"):
+                st.session_state.active_nav_module = mod
+                st.rerun()
+
+st.markdown("<div style='margin-bottom: 0.85rem;'></div>", unsafe_allow_html=True)
+
+# ---------------------------------------------------------
 # ROW-LEVEL SECURITY (RLS) ACCESS CLEARANCE CHECK
 # ---------------------------------------------------------
 if not active_rm_info.get("accessible", True):
@@ -285,10 +328,136 @@ if not active_rm_info.get("accessible", True):
             <span>Access Policy: <strong style="color: #55EFC4;">RLS Block Active</strong></span>
         </div>
         <div style="font-size: 0.85rem; color: #C5A880; margin-top: 1.5rem;">
-            💡 <em>To view the Asia Wealth Intelligence Cockpit, switch to <strong>Priscilla Ong (RM-SG-014)</strong> or <strong>Marc Guggenheim (DH-SG-001 — Supervisory Desk Head)</strong> using the sidebar profile switcher.</em>
+            💡 <em>To view the Asia JB Pulse - Wealth Intelligence platform, switch to <strong>Priscilla Ong (RM-SG-014)</strong> or <strong>Marc Guggenheim (DH-SG-001 — Supervisory Desk Head)</strong> using the sidebar profile switcher.</em>
         </div>
     </div>
     """, unsafe_allow_html=True)
+    st.stop()
+
+# ---------------------------------------------------------
+# GLOBAL FOOTER DIALOGS & FOOTER COMPONENT
+# ---------------------------------------------------------
+@st.dialog("🎫 Raise Support / Advisory Ticket", width="medium")
+def show_raise_ticket_dialog():
+    st.markdown("### 🎫 Raise Support or Advisory Ticket")
+    st.caption("Submit an operational inquiry, trade execution dispute, or mandate reclassification request.")
+    
+    t_type = st.selectbox("Ticket Category", [
+        "Trade Execution & Orders",
+        "Lombard Credit Facility & Collateral",
+        "Client Mandate & SAA Limit Reclassification",
+        "Avaloq / Core Banking Data Issue",
+        "Compliance & Suitability Review",
+        "Other Operational Inquiry"
+    ])
+    t_prio = st.selectbox("Priority Level", ["Normal", "High", "Critical (Margin Call / Trade Blocking)"])
+    t_client = st.text_input("Client ID / Name (Optional)", value=st.session_state.get("selected_client_id", "CL-0001"))
+    t_desc = st.text_area("Ticket Description & Context", placeholder="Describe the issue, requested limit increase, or trade override...")
+    
+    if st.button("🚀 Submit Ticket", type="primary", use_container_width=True):
+        st.success("✅ Ticket #JB-2026-8941 successfully created and dispatched to Julius Baer Operations Desk.")
+
+@st.dialog("📞 Julius Baer Internal Support Directory", width="medium")
+def show_contact_support_dialog():
+    st.markdown("### 📞 Private Banking & Desk Support")
+    st.caption("Direct hotlines for Priscilla Ong (Asia Desk — Singapore & Hong Kong)")
+    
+    st.markdown("""
+    <div style="background: rgba(12, 26, 48, 0.8); border: 1px solid rgba(197, 160, 89, 0.3); border-radius: 8px; padding: 1rem; font-size: 0.88rem; line-height: 1.8;">
+        <strong>🏛️ Singapore Dealing Room & Trading Desk:</strong><br>
+        • Hotline: <code>+65 6827 1800</code> • Dealing Order Desk: <code>sg-execution@juliusbaer.com</code><br><br>
+        <strong>🏢 Hong Kong Advisory & Execution Hub:</strong><br>
+        • Hotline: <code>+852 2899 4800</code> • HK Desk: <code>hk-dealing@juliusbaer.com</code><br><br>
+        <strong>💳 Lombard Lending & Credit Structuring:</strong><br>
+        • Credit Hotline: <code>+65 6827 1950</code> • Lead Approver: <code>credit-asia@juliusbaer.com</code><br><br>
+        <strong>🔒 Compliance & Supervisory Officer (Desk Head):</strong><br>
+        • Marc Guggenheim (DH-SG-001): <code>marc.guggenheim@juliusbaer.com</code><br><br>
+        <strong>💻 24/7 IT Infrastructure & Avaloq Support:</strong><br>
+        • IT Helpdesk: <code>+41 58 888 1111</code> (Zurich / Global Support)
+    </div>
+    """, unsafe_allow_html=True)
+
+@st.dialog("📰 Real-Time Macro & Geopolitical News Alerts", width="large")
+def show_news_alert_dialog(repo_instance):
+    st.markdown("### 📰 2026 Market Events & News Wire")
+    st.caption("Authoritative geopolitical and macro transmissions calibrated against event_log.csv")
+    
+    events = repo_instance.get_events()
+    df_ev = pd.DataFrame(events)
+    st.dataframe(
+        df_ev[["event_date", "event_type", "region", "description", "primary_transmission", "severity"]],
+        column_config={
+            "event_date": "Event Date",
+            "event_type": "Headline / Event Type",
+            "region": "Affected Region",
+            "description": "Event Description",
+            "primary_transmission": "Transmission Channel",
+            "severity": "Severity"
+        },
+        hide_index=True,
+        use_container_width=True
+    )
+
+@st.dialog("🔒 Data Privacy & Swiss Banking Secrecy Policy", width="medium")
+def show_data_privacy_dialog():
+    st.markdown("### 🔒 Julius Baer Data Privacy & Protection Policy")
+    st.caption("Compliance with Swiss Federal Banking Act (Article 47), MAS Notice 644, and HKMA PDPO")
+    
+    st.markdown("""
+    <div style="background: rgba(12, 26, 48, 0.8); border: 1px solid rgba(197, 160, 89, 0.3); border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.6; color: #E2E8F0;">
+        <strong>1. Row-Level Security (RLS) Isolation:</strong><br>
+        Client portfolios, transactions, and CRM notes are strictly compartmentalized by assigned Relationship Manager. Cross-desk data access is cryptographically restricted.<br><br>
+        <strong>2. Zero-PII Presentation Guardrails:</strong><br>
+        When client presentation mode is activated, all client names, identification numbers, and account codes are dynamically tokenized to prevent accidental disclosure during video meetings or external reviews.<br><br>
+        <strong>3. AI Memory & Data Retention:</strong><br>
+        No client data is transmitted to public unvetted external models. All LLM calls operate within secure, enterprise-hosted isolated enclaves with zero data retention for training.
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_bottom_footer(repo_instance, analytics_instance, key_prefix: str = "main"):
+    st.markdown("<br><hr style='border-color: rgba(197, 160, 89, 0.25); margin: 2.5rem 0 1rem 0;'>", unsafe_allow_html=True)
+    f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns([2.2, 1.2, 1.3, 1.2, 1.2])
+    
+    with f_col1:
+        st.markdown("""
+        <div style="font-size: 0.78rem; color: #94A3B8; padding-top: 0.2rem;">
+            <strong style="color: #C5A059;">Bank Julius Baer & Co. Ltd.</strong> • JB Pulse — Wealth Intelligence<br>
+            SingHacks 2026 • Confidential & Licensed for Private Banking RM Use
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with f_col2:
+        if st.button("Raise ticket", key=f"btn_footer_ticket_{key_prefix}", use_container_width=True):
+            show_raise_ticket_dialog()
+            
+    with f_col3:
+        if st.button("Contact Support", key=f"btn_footer_support_{key_prefix}", use_container_width=True):
+            show_contact_support_dialog()
+            
+    with f_col4:
+        if st.button("News alert", key=f"btn_footer_news_{key_prefix}", use_container_width=True):
+            show_news_alert_dialog(repo_instance)
+            
+    with f_col5:
+        if st.button("Data Privacy", key=f"btn_footer_privacy_{key_prefix}", use_container_width=True):
+            show_data_privacy_dialog()
+
+# Specialized Module View Routing
+if st.session_state.get("active_nav_module") == "🧪 Portfolio Stress Testing Lab":
+    render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot)
+    render_bottom_footer(repo, analytics, key_prefix="mod1")
+    st.stop()
+elif st.session_state.get("active_nav_module") == "💬 Trigger-to-Conversation Engine":
+    render_trigger_conversation_engine(repo, analytics, llm_engine, selected_snapshot)
+    render_bottom_footer(repo, analytics, key_prefix="mod2")
+    st.stop()
+elif st.session_state.get("active_nav_module") == "👤 Client Digital Twin":
+    render_client_digital_twin(repo, analytics, llm_engine, selected_snapshot)
+    render_bottom_footer(repo, analytics, key_prefix="mod3")
+    st.stop()
+elif st.session_state.get("active_nav_module") == "🔍 Explainable AI":
+    render_explainable_ai(repo, analytics, llm_engine, selected_snapshot)
+    render_bottom_footer(repo, analytics, key_prefix="mod4")
     st.stop()
 
 # Run Book Prioritization across all 20 clients
@@ -332,8 +501,26 @@ def render_client_switcher(key_suffix: str):
         st.session_state.selected_client_id = new_cid
         st.rerun()
 
-# Dynamic Book KPIs calculated against active filtered_book
+# Dynamic Book KPIs & Overall Book Returns calculated against active filtered_book
 total_book_aum = sum(b["total_aum_usd"] for b in filtered_book)
+total_book_base_aum = 0.0
+total_book_prev_aum = 0.0
+for b in filtered_book:
+    cid = b["client_id"]
+    ret_info = analytics.compute_portfolio_returns(cid, selected_snapshot)
+    total_book_base_aum += ret_info["baseline_aum_usd"]
+    total_book_prev_aum += (ret_info["baseline_aum_usd"] if not ret_info["previous_snapshot_date"] else (ret_info["current_aum_usd"] - ret_info["period_return_usd"]))
+
+book_cum_ret_usd = total_book_aum - total_book_base_aum
+book_cum_ret_pct = (book_cum_ret_usd / total_book_base_aum * 100.0) if total_book_base_aum > 0 else 0.0
+book_ret_sign = "+" if book_cum_ret_pct > 0 else ""
+book_ret_color = "#55EFC4" if book_cum_ret_pct >= 0 else "#FF7675"
+
+book_period_ret_usd = total_book_aum - total_book_prev_aum
+book_period_ret_pct = (book_period_ret_usd / total_book_prev_aum * 100.0) if total_book_prev_aum > 0 else 0.0
+book_p_ret_sign = "+" if book_period_ret_pct > 0 else ""
+book_p_ret_color = "#55EFC4" if book_period_ret_pct >= 0 else "#FF7675"
+
 total_breach_clients = sum(1 for b in filtered_book if b["has_drift_alert"])
 
 # Exact discrete breach line-items and affected portfolios
@@ -369,148 +556,90 @@ def show_breaches_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
     unique_pfs = len(set(b["portfolio_id"] for b in all_breaches))
     
     with b_col1:
-        st.metric("Total Breach Records", f"{len(all_breaches)} ({unique_pfs} Portfolios / {unique_clients} Clients)")
+        st.metric("Total Breach Items", len(all_breaches), f"Across {unique_clients} Clients ({unique_pfs} Portfolios)")
     with b_col2:
-        st.metric("Total Required Trimming / De-Risking", f"${total_trim_usd/1e6:,.2f}M USD")
+        st.metric("Total Trims / De-risking", f"${total_trim_usd/1e6:,.2f}M", "Upper Bands & Concentrations")
     with b_col3:
-        st.metric("Total Deficit Redeployment", f"${total_add_usd/1e6:,.2f}M USD")
+        st.metric("Total Additions Required", f"${total_add_usd/1e6:,.2f}M", "Underweight Mandates")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Filter by category or search
-    cat_filter = st.radio("Filter Breach Category", options=["All Breaches", "Asset Class Drift", "Concentration Limit"], horizontal=True)
-    filtered_b = all_breaches
-    if cat_filter != "All Breaches":
-        filtered_b = [b for b in filtered_b if b["category"] == cat_filter]
-
-    # Convert to DataFrame
-    df_b = pd.DataFrame([
-        {
-            "client_id": b["client_id"],
-            "client_name": format_client_display_name(b["client_name"], b["client_id"]),
-            "portfolio_id": b["portfolio_id"],
-            "portfolio_name": b["portfolio_name"],
-            "category": b["category"],
-            "item_name": b["item_name"],
-            "breach_type": b["breach_type"],
-            "actual_pct": f"{b['actual_pct']:.2f}%" if isinstance(b['actual_pct'], (int, float)) else str(b['actual_pct']),
-            "band_limit": b["band_limit"],
-            "action_usd": b["action_usd"]
-        }
-        for b in filtered_b
-    ])
-    breach_selection = st.dataframe(
-        df_b[["client_id", "client_name", "portfolio_id", "portfolio_name", "category", "item_name", "breach_type", "actual_pct", "band_limit", "action_usd"]],
+    st.markdown("---")
+    b_df = pd.DataFrame(all_breaches)
+    st.dataframe(
+        b_df[["client_id", "client_name", "portfolio_name", "mandate_code", "category", "item_name", "breach_type", "actual_pct", "band_limit", "action_usd"]],
         column_config={
             "client_id": "Client ID",
             "client_name": "Client Name",
-            "portfolio_id": "Portfolio",
-            "portfolio_name": "Sleeve Name",
-            "category": "Category",
-            "item_name": "Breach Item / Holding",
-            "breach_type": "Breach Type",
-            "actual_pct": "Actual %",
+            "portfolio_name": "Portfolio Sleeve",
+            "mandate_code": "Mandate",
+            "category": "Breach Category",
+            "item_name": "Asset / Issuer",
+            "breach_type": "Breach Severity",
+            "actual_pct": st.column_config.NumberColumn("Actual %", format="%.2f%%"),
             "band_limit": "Mandate Limit",
-            "action_usd": "Recommended Action"
+            "action_usd": "Required Action"
         },
         hide_index=True,
-        use_container_width=True,
-        height=380,
-        on_select="rerun",
-        selection_mode="single-row",
-        key="df_breaches_selection_grid"
+        use_container_width=True
     )
-
-    if breach_selection and breach_selection.get("selection", {}).get("rows"):
-        sel_idx = breach_selection["selection"]["rows"][0]
-        if sel_idx < len(df_b):
-            target_cid = df_b.iloc[sel_idx]["client_id"]
-            st.session_state.selected_client_id = target_cid
-            st.session_state.jump_to_tab = 1
-            st.rerun()
-
+    
     st.markdown("<br>", unsafe_allow_html=True)
-    b_pick_col1, b_pick_col2 = st.columns([3, 1])
-    with b_pick_col1:
-        sel_client = st.selectbox(
-            "Or pick client directly to open in Client 360 & Action Deck",
+    pick_col1, pick_col2 = st.columns([3, 1])
+    with pick_col1:
+        sel_client_to_jump = st.selectbox(
+            "Or select client from breaches list to jump directly to dossier",
             options=sorted(list(set(f"{b['client_id']} — {format_client_display_name(b['client_name'], b['client_id'])}" for b in all_breaches))),
             key="sel_client_from_breaches_dialog"
         )
-    with b_pick_col2:
+    with pick_col2:
         st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
         if st.button("🚀 Open Dossier", key="btn_jump_from_breach_dialog", use_container_width=True):
-            st.session_state.selected_client_id = sel_client.split(" — ")[0]
+            st.session_state.selected_client_id = sel_client_to_jump.split(" — ")[0]
             st.session_state.jump_to_tab = 1
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
 
-@st.dialog("🚨 Book-Wide Lombard Lending & Credit Risk Alerts", width="large")
+@st.dialog("🚨 Credit Facilities & Lombard Margin Call Alerts", width="large")
 def show_ltv_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
-    st.markdown(f"### 🚨 Lombard Facility LTV Margin Call Alerts ({snapshot_date})")
-    st.caption("Active monitoring of credit facilities approaching covenant margin call triggers or headroom deficits. Click any row to jump to client dossier.")
-
+    st.markdown(f"### 🚨 Credit Facilities & Margin Call Trajectory ({snapshot_date})")
+    st.caption("Active Lombard loans, collateral market values, lending values, and margin call headroom buffer.")
+    
     all_alerts = analytics.get_all_book_ltv_alerts(snapshot_date)
     if scope_cids:
         all_alerts = [a for a in all_alerts if a["client_id"] in scope_cids]
     if not all_alerts:
-        st.success("✅ All credit facilities across the selected dossiers are currently within safe lending buffers.")
+        st.success("✅ All credit facilities within safe LTV parameters (>5% headroom buffer).")
         return
 
-    df_ltv = pd.DataFrame([
-        {
-            "client_id": a["client_id"],
-            "client_name": format_client_display_name(a["client_name"], a["client_id"]),
-            "facility_id": a["facility_id"],
-            "drawn_loan_usd": f"${a['drawn_loan_usd']:,.0f}",
-            "collateral_value_usd": f"${a['collateral_value_usd']:,.0f}",
-            "current_ltv_pct": f"{a['current_ltv_pct']:.2f}%",
-            "margin_call_pct": f"{a['margin_call_pct']:.1f}%",
-            "buffer_pct": f"{a['buffer_pct']:.2f}%",
-            "headroom_usd": f"${a['headroom_usd']:,.0f}",
-            "severity": a["severity"]
-        }
-        for a in all_alerts
-    ])
-    ltv_selection = st.dataframe(
-        df_ltv[["client_id", "client_name", "facility_id", "drawn_loan_usd", "collateral_value_usd", "current_ltv_pct", "margin_call_pct", "buffer_pct", "headroom_usd", "severity"]],
+    st.markdown("---")
+    l_df = pd.DataFrame(all_alerts)
+    st.dataframe(
+        l_df[["client_id", "client_name", "facility_id", "facility_type", "drawn_loan_usd", "collateral_value_usd", "current_ltv_pct", "margin_call_pct", "buffer_pct", "severity"]],
         column_config={
             "client_id": "Client ID",
             "client_name": "Client Name",
             "facility_id": "Facility ID",
-            "drawn_loan_usd": "Drawn Loan",
-            "collateral_value_usd": "Collateral Value",
-            "current_ltv_pct": "Current LTV",
-            "margin_call_pct": "Margin Call Trigger",
-            "buffer_pct": "Buffer to Trigger",
-            "headroom_usd": "Available Headroom",
-            "severity": "Severity"
+            "facility_type": "Facility Type",
+            "drawn_loan_usd": st.column_config.NumberColumn("Drawn Loan ($)", format="$%,.0f"),
+            "collateral_value_usd": st.column_config.NumberColumn("Collateral Value ($)", format="$%,.0f"),
+            "current_ltv_pct": st.column_config.NumberColumn("Current LTV", format="%.1f%%"),
+            "margin_call_pct": st.column_config.NumberColumn("Margin Call LTV", format="%.1f%%"),
+            "buffer_pct": st.column_config.NumberColumn("Buffer to Margin Call", format="%.1f%%"),
+            "severity": "Severity Status"
         },
         hide_index=True,
-        use_container_width=True,
-        on_select="rerun",
-        selection_mode="single-row",
-        key="df_ltv_selection_grid"
+        use_container_width=True
     )
 
-    if ltv_selection and ltv_selection.get("selection", {}).get("rows"):
-        sel_idx = ltv_selection["selection"]["rows"][0]
-        if sel_idx < len(df_ltv):
-            target_cid = df_ltv.iloc[sel_idx]["client_id"]
-            st.session_state.selected_client_id = target_cid
-            st.session_state.jump_to_tab = 1
-            st.rerun()
-
     st.markdown("<br>", unsafe_allow_html=True)
-    l_pick_col1, l_pick_col2 = st.columns([3, 1])
-    with l_pick_col1:
+    ltv_pick_col1, ltv_pick_col2 = st.columns([3, 1])
+    with ltv_pick_col1:
         sel_ltv_client = st.selectbox(
-            "Or pick client to open dossier",
+            "Or pick client with credit alerts to open dossier",
             options=sorted(list(set(f"{a['client_id']} — {format_client_display_name(a['client_name'], a['client_id'])}" for a in all_alerts))),
             key="sel_client_from_ltv_dialog"
         )
-    with l_pick_col2:
+    with ltv_pick_col2:
         st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
         if st.button("🚀 Open Dossier", key="btn_jump_from_ltv_dialog", use_container_width=True):
             st.session_state.selected_client_id = sel_ltv_client.split(" — ")[0]
@@ -519,84 +648,50 @@ def show_ltv_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         st.markdown("</div>", unsafe_allow_html=True)
 
 
-@st.dialog("💧 Book-Wide Liquidity Runway & Capital Call Deficits", width="large")
+@st.dialog("💧 Book-Wide Liquidity Runway & Commitment Deficits", width="large")
 def show_liquidity_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
-    st.markdown(f"### 💧 Book-Wide Liquidity Runway & Milestone Obligations ({snapshot_date})")
-    st.caption("Consolidated deterministic reconciliation of cash holdings, credit headroom, uncalled PE capital commitments, and planned cash needs across the book. Click any row to jump to client dossier.")
+    st.markdown(f"### 💧 Liquidity Runway & Private Market Deficits ({snapshot_date})")
+    st.caption("Whole-book audit of uncalled private equity commitments, planned milestone cash needs, and liquid cash reserve buffers.")
 
     all_deficits = analytics.get_all_book_liquidity_deficits(snapshot_date)
     if scope_cids:
         all_deficits = [d for d in all_deficits if d["client_id"] in scope_cids]
     if not all_deficits:
-        st.success("✅ All clients currently maintain strong liquidity surpluses and comfortable capital call coverage.")
+        st.success("✅ All clients have adequate liquid reserves to cover commitments and milestone cash needs.")
         return
 
-    # Metrics summary
-    shortfall_clients = [d for d in all_deficits if d["has_shortfall"]]
-    total_shortfall_usd = sum(abs(d["net_surplus_deficit_usd"]) for d in shortfall_clients)
-    total_uncalled_book = sum(d["uncalled_commitments_usd"] for d in all_deficits)
-    total_planned_needs_book = sum(d["planned_cash_needs_usd"] for d in all_deficits)
+    # Aggregate metrics
+    tot_uncalled = sum(d["uncalled_commitments_usd"] for d in all_deficits)
+    tot_needs = sum(d["planned_cash_needs_usd"] for d in all_deficits)
+    tot_shortfall_clients = sum(1 for d in all_deficits if d["has_shortfall"])
 
-    l_col1, l_col2, l_col3, l_col4 = st.columns(4)
-    with l_col1:
-        st.metric("Clients in Deficit", f"{len(shortfall_clients)} Clients", delta=f"{len(all_deficits)} with Obligations", delta_color="inverse")
-    with l_col2:
-        st.metric("Net Cumulative Shortfall", f"${total_shortfall_usd/1e6:,.2f}M USD")
-    with l_col3:
-        st.metric("Total Uncalled Commitments", f"${total_uncalled_book/1e6:,.2f}M USD")
-    with l_col4:
-        st.metric("Planned Life Milestones", f"${total_planned_needs_book/1e6:,.2f}M USD")
+    c_m1, c_m2, c_m3 = st.columns(3)
+    with c_m1:
+        st.metric("Total Uncalled Commitments", f"${tot_uncalled/1e6:,.2f}M", "Private Equity Funds")
+    with c_m2:
+        st.metric("Planned Cash Milestones", f"${tot_needs/1e6:,.2f}M", "Next 12 Months")
+    with c_m3:
+        st.metric("Clients in Deficit", tot_shortfall_clients, "Immediate Action Required" if tot_shortfall_clients > 0 else "All Covered")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Filter by urgency
-    liq_filter = st.radio("Filter Liquidity Health", options=["All Clients with Obligations", "Deficits / Shortfalls Only (🚨)", "Tight Buffers (<1.3x)"], horizontal=True)
-    filtered_l = all_deficits
-    if liq_filter == "Deficits / Shortfalls Only (🚨)":
-        filtered_l = [d for d in filtered_l if d["has_shortfall"]]
-    elif liq_filter == "Tight Buffers (<1.3x)":
-        filtered_l = [d for d in filtered_l if d["coverage_ratio"] < 1.3]
-
-    df_liq = pd.DataFrame([
-        {
-            "client_id": d["client_id"],
-            "client_name": format_client_display_name(d["client_name"], d["client_id"]),
-            "total_liquid_pool_usd": f"${d['total_liquid_pool_usd']:,.0f}",
-            "total_outflows_expected_usd": f"${d['total_outflows_expected_usd']:,.0f}",
-            "net_surplus_deficit_usd": f"-${abs(d['net_surplus_deficit_usd']):,.0f}" if d["net_surplus_deficit_usd"] < 0 else f"${d['net_surplus_deficit_usd']:,.0f}",
-            "coverage_ratio": f"{d['coverage_ratio']:.2f}x" if d["coverage_ratio"] < 900 else "N/A",
-            "severity": d["severity"],
-            "obligation_summary": d["obligation_summary"]
-        }
-        for d in filtered_l
-    ])
-    liq_selection = st.dataframe(
-        df_liq[["client_id", "client_name", "total_liquid_pool_usd", "total_outflows_expected_usd", "net_surplus_deficit_usd", "coverage_ratio", "severity", "obligation_summary"]],
+    st.markdown("---")
+    liq_df = pd.DataFrame(all_deficits)
+    st.dataframe(
+        liq_df[["client_id", "client_name", "total_liquid_pool_usd", "uncalled_commitments_usd", "planned_cash_needs_usd", "total_outflows_expected_usd", "net_surplus_deficit_usd", "coverage_ratio", "severity", "obligation_summary"]],
         column_config={
             "client_id": "Client ID",
             "client_name": "Client Name",
-            "total_liquid_pool_usd": "Liquid Pool",
-            "total_outflows_expected_usd": "Total Obligations",
-            "net_surplus_deficit_usd": "Net Surplus / (Deficit)",
-            "coverage_ratio": "Coverage Ratio",
-            "severity": "Status & Urgency",
-            "obligation_summary": "Key Commitments & Planned Cash Needs"
+            "total_liquid_pool_usd": st.column_config.NumberColumn("Liquid Pool ($)", format="$%,.0f"),
+            "uncalled_commitments_usd": st.column_config.NumberColumn("Uncalled PE ($)", format="$%,.0f"),
+            "planned_cash_needs_usd": st.column_config.NumberColumn("Cash Needs ($)", format="$%,.0f"),
+            "total_outflows_expected_usd": st.column_config.NumberColumn("Total Outflows ($)", format="$%,.0f"),
+            "net_surplus_deficit_usd": st.column_config.NumberColumn("Surplus / (Deficit) ($)", format="$%,.0f"),
+            "coverage_ratio": st.column_config.NumberColumn("Coverage Ratio", format="%.2fx"),
+            "severity": "Liquidity Status",
+            "obligation_summary": "Active Milestone Obligations"
         },
         hide_index=True,
-        use_container_width=True,
-        height=360,
-        on_select="rerun",
-        selection_mode="single-row",
-        key="df_liq_selection_grid"
+        use_container_width=True
     )
-
-    if liq_selection and liq_selection.get("selection", {}).get("rows"):
-        sel_idx = liq_selection["selection"]["rows"][0]
-        if sel_idx < len(df_liq):
-            target_cid = df_liq.iloc[sel_idx]["client_id"]
-            st.session_state.selected_client_id = target_cid
-            st.session_state.jump_to_tab = 1
-            st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
     liq_pick_col1, liq_pick_col2 = st.columns([3, 1])
@@ -615,8 +710,8 @@ def show_liquidity_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         st.markdown("</div>", unsafe_allow_html=True)
 
 
-# Top KPI Columns with Interactive Clickable Actions
-kpi_c1, kpi_c2, kpi_c3, kpi_c4 = st.columns(4)
+# Top KPI Columns with Interactive Clickable Actions (5 Cards Grid)
+kpi_c1, kpi_c2, kpi_c3, kpi_c4, kpi_c5 = st.columns(5)
 scope_count = len(filtered_book)
 scope_label = "Book" if scope_count == 20 else f"{scope_count} Dossiers"
 
@@ -632,15 +727,24 @@ with kpi_c1:
 with kpi_c2:
     st.markdown(f"""
     <div class="jb-kpi-card">
-        <div class="jb-kpi-label">Mandate Breaches</div>
-        <div class="jb-kpi-value" style="color: {'#FF7675' if total_breach_items > 0 else '#55EFC4'};">{total_breach_items}</div>
-        <div class="jb-kpi-sub">Across {total_breach_pfs} Portfolios ({total_breach_clients} Clients)</div>
+        <div class="jb-kpi-label">Overall Book Return</div>
+        <div class="jb-kpi-value" style="color: {book_ret_color};">{book_ret_sign}{book_cum_ret_pct:.2f}%</div>
+        <div class="jb-kpi-sub">Period: <strong style="color: {book_p_ret_color};">{book_p_ret_sign}{book_period_ret_pct:.2f}%</strong> ({book_ret_sign}${book_cum_ret_usd/1e6:,.1f}M)</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button(f"🔍 View {total_breach_items} Breach Records ({scope_label})", key="btn_kpi_breaches", use_container_width=True):
-        show_breaches_dialog(selected_snapshot, filtered_cids)
 
 with kpi_c3:
+    st.markdown(f"""
+    <div class="jb-kpi-card">
+        <div class="jb-kpi-label">Mandate Breaches</div>
+        <div class="jb-kpi-value" style="color: {'#FF7675' if total_breach_items > 0 else '#55EFC4'};">{total_breach_items}</div>
+        <div class="jb-kpi-sub">Across {total_breach_pfs} Pfs ({total_breach_clients} Clients)</div>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button(f"🔍 View {total_breach_items} Breach(es)", key="btn_kpi_breaches", use_container_width=True):
+        show_breaches_dialog(selected_snapshot, filtered_cids)
+
+with kpi_c4:
     st.markdown(f"""
     <div class="jb-kpi-card">
         <div class="jb-kpi-label">Credit / LTV Alerts</div>
@@ -648,10 +752,10 @@ with kpi_c3:
         <div class="jb-kpi-sub">Margin Call Proximity Alerts</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button(f"🔍 View {total_ltv_alerts} Credit Alert(s) ({scope_label})", key="btn_kpi_ltv", use_container_width=True):
+    if st.button(f"🔍 View {total_ltv_alerts} Credit Alert(s)", key="btn_kpi_ltv", use_container_width=True):
         show_ltv_dialog(selected_snapshot, filtered_cids)
 
-with kpi_c4:
+with kpi_c5:
     st.markdown(f"""
     <div class="jb-kpi-card">
         <div class="jb-kpi-label">Liquidity Deficits</div>
@@ -788,7 +892,12 @@ with tab_queue:
                 if conflicts > 0:
                     badge_html += f'<span class="jb-badge jb-badge-rule" style="margin-right: 4px;">⚡ {conflicts} Conflict Tradeoff</span>'
 
-                info_html = f"""<div><div style="display: flex; align-items: center; gap: 0.75rem;"><span style="font-size: 1.15rem; font-weight: 700; color: #FFFFFF;">{cname}</span><span style="font-size: 0.8rem; color: #C5A880; font-family: monospace;">{cid}</span>{badge_html}</div><div style="font-size: 0.85rem; color: #94A3B8; margin-top: 0.2rem;">AUM: <strong style="color: #FFFFFF;">${aum/1e6:,.2f}M</strong> | Risk: <strong style="color: #FFFFFF;">{risk}</strong> | {last_contact_html} | Desk: {desk} | Domicile: {domicile}</div><div style="font-size: 0.9rem; color: #E2E8F0; margin-top: 0.4rem; padding-left: 0.5rem; border-left: 2px solid #C5A880;">💡 <strong>Priority Action:</strong> {headline}</div></div>"""
+                c_ret_info = analytics.compute_portfolio_returns(item["client_id"], selected_snapshot)
+                c_ret_pct = c_ret_info["cumulative_return_pct"]
+                c_ret_sign = "+" if c_ret_pct > 0 else ""
+                c_ret_color = "#55EFC4" if c_ret_pct >= 0 else "#FF7675"
+
+                info_html = f"""<div><div style="display: flex; align-items: center; gap: 0.75rem;"><span style="font-size: 1.15rem; font-weight: 700; color: #FFFFFF;">{cname}</span><span style="font-size: 0.8rem; color: #C5A880; font-family: monospace;">{cid}</span>{badge_html}</div><div style="font-size: 0.85rem; color: #94A3B8; margin-top: 0.2rem;">AUM: <strong style="color: #FFFFFF;">${aum/1e6:,.2f}M</strong> | Return (YTD): <strong style="color: {c_ret_color};">{c_ret_sign}{c_ret_pct:.2f}%</strong> | Risk: <strong style="color: #FFFFFF;">{risk}</strong> | {last_contact_html} | Desk: {desk} | Domicile: {domicile}</div><div style="font-size: 0.9rem; color: #E2E8F0; margin-top: 0.4rem; padding-left: 0.5rem; border-left: 2px solid #C5A880;">💡 <strong>Priority Action:</strong> {headline}</div></div>"""
                 st.markdown(info_html, unsafe_allow_html=True)
 
             with col_action:
@@ -808,7 +917,7 @@ with tab_client360:
     client = repo.get_client(target_cid)
     
     if client:
-        c360_header_c1, c360_header_c2 = st.columns([3, 1.5])
+        c360_header_c1, c360_header_c2 = st.columns([1.8, 2.2])
         with c360_header_c1:
             age_val = client.get("age")
             if pd.notna(age_val) and str(age_val).strip() != "":
@@ -822,7 +931,7 @@ with tab_client360:
             disp_client_name = format_client_display_name(client['client_name'], target_cid)
             st.markdown(f"## 👤 {disp_client_name} ({target_cid})")
             st.markdown(f"""
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.88rem; color: #94A3B8;">
+            <div style="display: flex; gap: 0.85rem; flex-wrap: wrap; font-size: 0.85rem; color: #94A3B8;">
                 <div>{age_str}</div>
                 <div>📍 Domicile: <strong style="color: #FFF;">{client.get('tax_domicile', 'N/A')}</strong></div>
                 <div>⚖️ Risk: <strong style="color: #FFF;">{client.get('risk_profile', 'N/A')} ({client.get('risk_tolerance_score', 'N/A')}/100)</strong></div>
@@ -833,18 +942,37 @@ with tab_client360:
             """, unsafe_allow_html=True)
         with c360_header_c2:
             render_client_switcher("tab2")
-            client_snap_holdings = repo.get_all_holdings_for_client(target_cid, selected_snapshot)
-            snap_aum_usd = sum(h["market_value_usd"] for h in client_snap_holdings) if client_snap_holdings else float(client.get("total_aum_usd", 0.0))
-            snap_aum_base = sum(h["market_value_base"] for h in client_snap_holdings) if client_snap_holdings else 0.0
-            base_ccy = client_snap_holdings[0]["portfolio_ccy"] if client_snap_holdings else client.get("base_currency", "USD")
-            
-            st.markdown(f"""
-            <div class="jb-kpi-card" style="margin-top: 0.5rem; padding: 0.75rem 1rem;">
-                <div class="jb-kpi-label">Client AUM ({selected_snapshot})</div>
-                <div class="jb-kpi-value" style="font-size: 1.35rem;">${snap_aum_usd/1e6:,.2f}M</div>
-                <div class="jb-kpi-sub">{base_ccy} {snap_aum_base/1e6:,.2f}M • {client['booking_centre']}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            ret_data = analytics.compute_portfolio_returns(target_cid, selected_snapshot)
+            snap_aum_usd = ret_data["current_aum_usd"]
+            snap_aum_base = ret_data["current_aum_base"]
+            cum_ret_pct = ret_data["cumulative_return_pct"]
+            cum_ret_usd = ret_data["cumulative_return_usd"]
+            period_ret_pct = ret_data["period_return_pct"]
+            period_label = ret_data["period_label"]
+            base_ccy = client.get("base_currency", "USD")
+
+            ret_color = "#55EFC4" if cum_ret_pct >= 0 else "#FF7675"
+            ret_sign = "+" if cum_ret_pct > 0 else ""
+            p_ret_color = "#55EFC4" if period_ret_pct >= 0 else "#FF7675"
+            p_ret_sign = "+" if period_ret_pct > 0 else ""
+
+            kpi_c_l, kpi_c_r = st.columns(2)
+            with kpi_c_l:
+                st.markdown(f"""
+                <div class="jb-kpi-card" style="margin-top: 0.4rem; padding: 0.75rem 0.85rem;">
+                    <div class="jb-kpi-label">Client AUM ({selected_snapshot})</div>
+                    <div class="jb-kpi-value" style="font-size: 1.25rem;">${snap_aum_usd/1e6:,.2f}M</div>
+                    <div class="jb-kpi-sub">{base_ccy} {snap_aum_base/1e6:,.2f}M • {client['booking_centre']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with kpi_c_r:
+                st.markdown(f"""
+                <div class="jb-kpi-card" style="margin-top: 0.4rem; padding: 0.75rem 0.85rem;">
+                    <div class="jb-kpi-label">Portfolio Returns (YTD)</div>
+                    <div class="jb-kpi-value" style="font-size: 1.25rem; color: {ret_color};">{ret_sign}{cum_ret_pct:.2f}%</div>
+                    <div class="jb-kpi-sub">{period_label}: <strong style="color: {p_ret_color};">{p_ret_sign}{period_ret_pct:.2f}%</strong> ({ret_sign}${cum_ret_usd/1e6:,.2f}M)</div>
+                </div>
+                """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -855,6 +983,22 @@ with tab_client360:
         pf_options = {f"{p['portfolio_id']} — {p['portfolio_name']} ({p['mandate_code']})": p['portfolio_id'] for p in portfolios}
         selected_pf_label = st.selectbox("Select Portfolio Sleeve for Deep-Dive", options=list(pf_options.keys()))
         selected_pf_id = pf_options[selected_pf_label]
+
+        pf_ret = analytics.compute_portfolio_returns(target_cid, selected_snapshot, portfolio_id=selected_pf_id)
+        sleeve_cum_pct = pf_ret["cumulative_return_pct"]
+        sleeve_per_pct = pf_ret["period_return_pct"]
+        s_ret_color = "#55EFC4" if sleeve_cum_pct >= 0 else "#FF7675"
+        s_ret_sign = "+" if sleeve_cum_pct > 0 else ""
+        s_p_color = "#55EFC4" if sleeve_per_pct >= 0 else "#FF7675"
+        s_p_sign = "+" if sleeve_per_pct > 0 else ""
+
+        st.markdown(f"""
+        <div style="background: rgba(19, 42, 74, 0.6); border: 1px solid rgba(197, 160, 89, 0.2); border-radius: 6px; padding: 0.45rem 0.85rem; font-size: 0.82rem; margin-bottom: 0.75rem; display: flex; gap: 1.25rem; flex-wrap: wrap;">
+            <span>💼 Sleeve AUM ({selected_snapshot}): <strong style="color: #FFF;">${pf_ret['current_aum_usd']/1e6:,.2f}M</strong></span>
+            <span>📈 YTD Performance: <strong style="color: {s_ret_color};">{s_ret_sign}{sleeve_cum_pct:.2f}%</strong> ({s_ret_sign}${pf_ret['cumulative_return_usd']/1e6:,.2f}M)</span>
+            <span>⏱️ Period Move ({pf_ret['period_label']}): <strong style="color: {s_p_color};">{s_p_sign}{sleeve_per_pct:.2f}%</strong> ({s_p_sign}${pf_ret['period_return_usd']/1e6:,.2f}M)</span>
+        </div>
+        """, unsafe_allow_html=True)
 
         col_left, col_right = st.columns([1, 1])
 
@@ -952,10 +1096,20 @@ with tab_client360:
             st.markdown(f"#### 📜 Standing RM Notes (As of {selected_snapshot})")
             notes_info = analytics.get_rm_notes(target_cid, as_of_date=selected_snapshot)
             if notes_info["has_notes"]:
+                shown_ids = set()
                 for ov in notes_info.get("standing_overrides", []):
+                    shown_ids.add(ov.get("note_id"))
                     st.warning(f"🔒 **Standing Constraint ({ov['date']}):** {ov['summary']}")
                 for pref in notes_info.get("preferences", []):
+                    shown_ids.add(pref.get("note_id"))
                     st.info(f"💡 **Preference ({pref['date']}):** {pref['summary']}")
+                for n in notes_info.get("notes", []):
+                    if n.get("note_id") not in shown_ids:
+                        st.markdown(f"""
+                        <div style="background: rgba(255,255,255,0.04); border-left: 3px solid #C5A880; border-radius: 4px; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; font-size: 0.84rem; color: #E2E8F0;">
+                            📝 <strong>RM Note ({n.get('note_date', '')} via {n.get('channel', 'Meeting')}):</strong> {html.escape(n.get('note', ''))}
+                        </div>
+                        """, unsafe_allow_html=True)
             else:
                 st.info(f"No qualitative overrides on record as of {selected_snapshot}.")
                 if notes_info.get("future_notes_count"):
@@ -1141,14 +1295,20 @@ with tab_actions:
 
             is_pkg_approved = all(st.session_state.approved_actions.get(rid, False) for rid in clubbed_rec_ids) or st.session_state.approved_actions.get(pkg_id, False)
             pkg_border = "#2ECC71" if is_pkg_approved else "#C5A880"
+            pkg_horizon = pkg.get("time_horizon")
+            pkg_horizon_badge = f'<span class="jb-badge" style="background: rgba(197, 168, 128, 0.2); border: 1px solid rgba(197, 168, 128, 0.4); color: #F5E6CC; font-weight: 600;">⏱️ Horizon: {html.escape(str(pkg_horizon))}</span>' if pkg_horizon else ""
+            conflicts_reconciled = pkg.get("conflicts_reconciled", [])
+            pkg_conf_badge = f'<span class="jb-badge" style="background: rgba(253, 203, 110, 0.2); border: 1px solid rgba(253, 203, 110, 0.4); color: #FDCB6E; font-weight: 600;">⚖️ {len(conflicts_reconciled)} Conflict Reconciled</span>' if conflicts_reconciled else ""
 
             with st.container():
                 st.markdown(f"""
                 <div class="jb-rec-card" style="border: 1.5px solid {pkg_border}; background: linear-gradient(135deg, rgba(197,168,128,0.12) 0%, rgba(13,30,54,0.7) 100%); border-radius: 8px; padding: 1.25rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
-                        <div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
                             <span class="jb-badge jb-badge-fact">✨ Multi-Agent Synergy</span>
                             <span class="jb-badge jb-badge-high">{len(clubbed_recs)} Actions Clubbed</span>
+                            {pkg_horizon_badge}
+                            {pkg_conf_badge}
                             <span class="jb-badge" style="background: rgba(255,255,255,0.1); color: #FFF;">Comingling Opportunity</span>
                         </div>
                         <div style="font-size: 0.8rem; color: #C5A880; font-family: monospace;">{pkg_id}</div>
@@ -1290,9 +1450,11 @@ with tab_actions:
             border_color = "#2ECC71" if is_approved else ("#E74C3C" if is_dismissed else "#C5A880")
             status_badge = f'<span class="jb-badge jb-badge-high">Status: {html.escape(rec["compliance_status"].upper())}</span>' if rec["compliance_status"] != "pass" else ""
             override_html = f'<div style="font-size: 0.82rem; color: #FDCB6E; margin-bottom: 0.4rem;">🔒 <em>{override_note}</em></div>' if override_note else ""
+            horizon_val = rec.get("time_horizon")
+            horizon_badge = f'<span class="jb-badge" style="background: rgba(197, 168, 128, 0.2); border: 1px solid rgba(197, 168, 128, 0.4); color: #F5E6CC; font-weight: 600;">⏱️ Horizon: {html.escape(str(horizon_val))}</span>' if horizon_val else ""
 
             with st.container():
-                rec_html = f"""<div class="jb-rec-card" style="border-left: 4px solid {border_color};"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;"><div><span class="jb-badge {p_class}">{priority.upper()} Priority</span> <span class="jb-badge {tier_class}">Confidence: {tier.upper()}</span> <span class="jb-badge" style="background: rgba(255,255,255,0.1); color: #FFF;">Agent: {agent.upper()}</span> {status_badge}</div><div style="font-size: 0.8rem; color: #C5A880; font-family: monospace;">{rec_id}</div></div><div class="jb-rec-headline">{headline}</div><div style="font-size: 0.9rem; color: #E2E8F0; margin-bottom: 0.5rem;"><strong>Proposed Action:</strong> {recommendation_text}</div>{override_html}</div>"""
+                rec_html = f"""<div class="jb-rec-card" style="border-left: 4px solid {border_color};"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;"><div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;"><span class="jb-badge {p_class}">{priority.upper()} Priority</span> <span class="jb-badge {tier_class}">Confidence: {tier.upper()}</span> <span class="jb-badge" style="background: rgba(255,255,255,0.1); color: #FFF;">Agent: {agent.upper()}</span> {horizon_badge} {status_badge}</div><div style="font-size: 0.8rem; color: #C5A880; font-family: monospace;">{rec_id}</div></div><div class="jb-rec-headline">{headline}</div><div style="font-size: 0.9rem; color: #E2E8F0; margin-bottom: 0.5rem;"><strong>Proposed Action:</strong> {recommendation_text}</div>{override_html}</div>"""
                 st.markdown(rec_html, unsafe_allow_html=True)
 
                 # Editable Client-Ready Talking Point
@@ -1529,10 +1691,11 @@ Audit Scope: Multi-Agent Synthesis, Cross-Border Suitability, Lombard Lending Bu
 """
             for i, r in enumerate(recs, 1):
                 ev = r["evidence"][0] if r.get("evidence") else {}
+                horizon_str = f" | Horizon: {r['time_horizon']}" if r.get("time_horizon") else ""
                 pack_content += f"""**Item {i}: [{r['agent'].upper()}] {r['headline']}**
 - *Pure Function Citation:* `{ev.get('source_function', 'N/A')}`
 - *Calculated Metric Fact:* {ev.get('detail', 'N/A')} (as of {ev.get('as_of_date', selected_snapshot)})
-- *Compliance Status:* {r.get('compliance_status', 'pass').upper()} | Priority: {r.get('priority', 'medium').upper()}
+- *Compliance Status:* {r.get('compliance_status', 'pass').upper()} | Priority: {r.get('priority', 'medium').upper()}{horizon_str}
 - *Proposed Execution:* {r['recommendation']}
 """
 
@@ -1562,17 +1725,19 @@ We have outlined key strategic recommendations for your review below:
             if approved_pkgs:
                 for pkg in approved_pkgs:
                     pkg_tp = st.session_state.custom_talking_points.get(pkg["id"], pkg["unified_talking_point"])
+                    pkg_horiz = f"\n- **Execution Horizon:** {pkg['time_horizon']}" if pkg.get("time_horizon") else ""
                     pack_content += f"""
 **★ Unified Strategic Action Package: {pkg['title']}**
 {pkg['summary']}
-- **Action Plan:** {pkg['unified_action']}
+- **Action Plan:** {pkg['unified_action']}{pkg_horiz}
 - **Key Client Benefit:** {pkg_tp}
 """
             for i, r in enumerate(approved_recs, 1):
                 tp = st.session_state.custom_talking_points.get(r["id"], r["talking_point"])
+                rec_horiz = f"\n- **Time Horizon:** {r['time_horizon']}" if r.get("time_horizon") else ""
                 pack_content += f"""
 **{i}. {r['headline']}**
-- **Recommended Action:** {r['recommendation']}
+- **Recommended Action:** {r['recommendation']}{rec_horiz}
 - **Rationale:** {tp}
 """
             pack_content += f"""
@@ -1730,3 +1895,6 @@ with tab_vector:
                     <div style="font-size: 0.9rem; color: #FFF; margin-top: 0.4rem;">{r['text']}</div>
                 </div>
                 """, unsafe_allow_html=True)
+
+# Standard Footer for Main JB Pulse Page (Outside tabs to render on every tab)
+render_bottom_footer(repo, analytics, key_prefix="jb_pulse_main")
