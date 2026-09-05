@@ -688,15 +688,24 @@ with tab_client360:
     if client:
         c360_header_c1, c360_header_c2 = st.columns([3, 1.5])
         with c360_header_c1:
+            age_val = client.get("age")
+            if pd.notna(age_val) and str(age_val).strip() != "":
+                try:
+                    age_str = f"🎂 Age: <strong style='color: #FFF;'>{int(float(age_val))}</strong> ({client.get('life_stage', 'N/A')})"
+                except (ValueError, TypeError):
+                    age_str = f"🏛️ Entity: <strong style='color: #FFF;'>{client.get('life_stage', 'Institutional')}</strong>"
+            else:
+                age_str = f"🏛️ Entity: <strong style='color: #FFF;'>{client.get('life_stage', 'Family Office')}</strong>"
+
             st.markdown(f"## 👤 {client['client_name']} ({target_cid})")
             st.markdown(f"""
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.88rem; color: #94A3B8;">
-                <div>🎂 Age: <strong style="color: #FFF;">{int(client['age'])}</strong> ({client['life_stage']})</div>
-                <div>📍 Domicile: <strong style="color: #FFF;">{client['tax_domicile']}</strong></div>
-                <div>⚖️ Risk: <strong style="color: #FFF;">{client['risk_profile']} ({client['risk_tolerance_score']}/100)</strong></div>
-                <div>💼 Wealth Band: <strong style="color: #C5A880;">{client['wealth_band']}</strong></div>
-                <div>🗣️ Language: <strong style="color: #FFF;">{client['reporting_language']}</strong></div>
-                <div>🏷️ KYC Status: <strong style="color: #FFF;">{client['kyc_review_due']}</strong></div>
+                <div>{age_str}</div>
+                <div>📍 Domicile: <strong style="color: #FFF;">{client.get('tax_domicile', 'N/A')}</strong></div>
+                <div>⚖️ Risk: <strong style="color: #FFF;">{client.get('risk_profile', 'N/A')} ({client.get('risk_tolerance_score', 'N/A')}/100)</strong></div>
+                <div>💼 Wealth Band: <strong style="color: #C5A880;">{client.get('wealth_band', 'N/A')}</strong></div>
+                <div>🗣️ Language: <strong style="color: #FFF;">{client.get('reporting_language', 'English')}</strong></div>
+                <div>🏷️ KYC Status: <strong style="color: #FFF;">{client.get('kyc_review_due', 'N/A')}</strong></div>
             </div>
             """, unsafe_allow_html=True)
         with c360_header_c2:
