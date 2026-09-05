@@ -199,6 +199,23 @@ filtered_cids = set(b["client_id"] for b in filtered_book)
 if st.session_state.selected_client_id not in filtered_cids and filtered_book:
     st.session_state.selected_client_id = filtered_book[0]["client_id"]
 
+client_dropdown_list = filtered_book if filtered_book else ranked_book
+client_dropdown_labels = [f"{b['client_id']} — {b['client_name']}" for b in client_dropdown_list]
+client_id_list = [b["client_id"] for b in client_dropdown_list]
+
+def render_client_switcher(key_suffix: str):
+    current_idx = client_id_list.index(st.session_state.selected_client_id) if st.session_state.selected_client_id in client_id_list else 0
+    selected_option = st.selectbox(
+        "Switch client",
+        options=client_dropdown_labels,
+        index=current_idx,
+        key=f"switch_client_{key_suffix}"
+    )
+    new_cid = selected_option.split(" — ")[0]
+    if new_cid != st.session_state.selected_client_id:
+        st.session_state.selected_client_id = new_cid
+        st.rerun()
+
 # Dynamic Book KPIs calculated against active filtered_book
 total_book_aum = sum(b["total_aum_usd"] for b in filtered_book)
 total_breach_clients = sum(1 for b in filtered_book if b["has_drift_alert"])
@@ -669,7 +686,7 @@ with tab_client360:
     client = repo.get_client(target_cid)
     
     if client:
-        c360_header_c1, c360_header_c2 = st.columns([3, 1])
+        c360_header_c1, c360_header_c2 = st.columns([3, 1.5])
         with c360_header_c1:
             st.markdown(f"## 👤 {client['client_name']} ({target_cid})")
             st.markdown(f"""
@@ -683,15 +700,16 @@ with tab_client360:
             </div>
             """, unsafe_allow_html=True)
         with c360_header_c2:
+            render_client_switcher("tab2")
             client_snap_holdings = repo.get_all_holdings_for_client(target_cid, selected_snapshot)
             snap_aum_usd = sum(h["market_value_usd"] for h in client_snap_holdings) if client_snap_holdings else float(client.get("total_aum_usd", 0.0))
             snap_aum_base = sum(h["market_value_base"] for h in client_snap_holdings) if client_snap_holdings else 0.0
             base_ccy = client_snap_holdings[0]["portfolio_ccy"] if client_snap_holdings else client.get("base_currency", "USD")
             
             st.markdown(f"""
-            <div class="jb-kpi-card">
+            <div class="jb-kpi-card" style="margin-top: 0.5rem; padding: 0.75rem 1rem;">
                 <div class="jb-kpi-label">Client AUM ({selected_snapshot})</div>
-                <div class="jb-kpi-value">${snap_aum_usd/1e6:,.2f}M</div>
+                <div class="jb-kpi-value" style="font-size: 1.35rem;">${snap_aum_usd/1e6:,.2f}M</div>
                 <div class="jb-kpi-sub">{base_ccy} {snap_aum_base/1e6:,.2f}M • {client['booking_centre']}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -815,9 +833,14 @@ with tab_client360:
 # TAB 3: AGENT ACTION DECK (RM IN CONTROL)
 # ---------------------------------------------------------
 with tab_actions:
+    act_top_c1, act_top_c2 = st.columns([3, 1.5])
+    with act_top_c1:
+        st.markdown(f"### ⚡ Intelligent Action Deck — Relationship Manager in Control")
+        st.caption("Specialist agents analyze deterministic facts to draft client-ready actions. Nothing reaches the client without your approval.")
+    with act_top_c2:
+        render_client_switcher("tab3")
+
     target_cid = st.session_state.selected_client_id
-    st.markdown(f"### ⚡ Intelligent Action Deck — Relationship Manager in Control")
-    st.caption("Specialist agents analyze deterministic facts to draft client-ready actions. Nothing reaches the client without your approval.")
 
     # Run client orchestrator
     client_result = orchestrator.run_client(target_cid, selected_snapshot)
@@ -1193,10 +1216,15 @@ with tab_actions:
 # TAB 4: CLIENT MEETING PACK & EMAIL GENERATOR
 # ---------------------------------------------------------
 with tab_pack:
+    pack_top_c1, pack_top_c2 = st.columns([3, 1.5])
+    with pack_top_c1:
+        st.markdown(f"### 📄 Client Meeting Brief & Email Generator")
+        st.caption("Compiles all RM-approved recommendations and talking points into a private banking client brief.")
+    with pack_top_c2:
+        render_client_switcher("tab4")
+
     target_cid = st.session_state.selected_client_id
     client = repo.get_client(target_cid)
-    st.markdown(f"### 📄 Client Meeting Brief & Email Generator")
-    st.caption("Compiles all RM-approved recommendations and talking points into a private banking client brief.")
 
     if client:
         client_result = orchestrator.run_client(target_cid, selected_snapshot)
