@@ -97,10 +97,11 @@ class ClientOrchestrator:
             clubbed_items = []
             clubbed_ids = []
 
-            # 1. Primary Concentration / Overweight De-risking
-            main_trim = trim_recs[0]
-            clubbed_items.append(main_trim)
-            clubbed_ids.append(main_trim.id)
+            # 1. Primary Concentration & Overweight De-risking (all qualifying breaches)
+            for t in trim_recs:
+                if t.id not in clubbed_ids:
+                    clubbed_items.append(t)
+                    clubbed_ids.append(t.id)
 
             # 2. Tax Loss Shield
             main_tax = tlh_recs[0] if tlh_recs else None
@@ -122,36 +123,56 @@ class ClientOrchestrator:
 
             if len(clubbed_items) >= 2:
                 # Dynamically derive components from actual clubbed recommendations
-                trim_target = main_trim.headline
-                if ":" in main_trim.headline:
-                    trim_target = main_trim.headline.split(":")[1].split("represents")[0].strip()
-                elif "overweight" in main_trim.headline.lower():
-                    trim_target = main_trim.headline.split("overweight")[0].strip()
+                trim_targets = []
+                for t in trim_recs:
+                    target_name = t.headline
+                    if ":" in t.headline:
+                        target_name = t.headline.split(":")[1].split("represents")[0].strip()
+                    elif "overweight" in t.headline.lower():
+                        target_name = t.headline.split("overweight")[0].strip()
+                    trim_targets.append(target_name)
 
-                title_parts = [f"De-risking ({trim_target})"]
-                summary_parts = [f"De-risk {main_trim.headline}"]
-                action_bullets = [f"1. **De-Risk Mandate Breach:** {main_trim.recommendation}"]
-                talking_point_parts = [f"trimming your position ({trim_target}) to restore mandate adherence"]
-                benefits = [f"🛡️ **Mandate Governance:** {main_trim.recommendation}"]
+                trim_label = ", ".join(trim_targets)
+                title_parts = [f"De-risking ({trim_label})"]
+                summary_parts = [f"De-risk {t.headline}" for t in trim_recs]
+                
+                action_bullets = []
+                idx = 1
+                for t in trim_recs:
+                    action_bullets.append(f"{idx}. **De-Risk Mandate Breach:** {t.recommendation}")
+                    idx += 1
+
+                talking_point_parts = [f"trimming positions in {trim_label} to restore mandate adherence"]
+                benefits = []
+                for t in trim_recs:
+                    clean_lbl = t.headline
+                    if ":" in t.headline and "represents" in t.headline:
+                        clean_lbl = t.headline.split(":")[1].split("represents")[0].strip()
+                    elif "overweight" in t.headline.lower():
+                        clean_lbl = t.headline.split("overweight")[0].strip() + " (Overweight)"
+                    benefits.append(f"🛡️ **Mandate Governance ({clean_lbl}):** {t.recommendation}")
 
                 if main_tax:
                     title_parts.append("Tax-Loss Shield")
                     summary_parts.append(f"execute {main_tax.headline.lower()} to shield taxable gains")
-                    action_bullets.append(f"2. **Harvest Tax Losses:** {main_tax.recommendation}")
+                    action_bullets.append(f"{idx}. **Harvest Tax Losses:** {main_tax.recommendation}")
+                    idx += 1
                     talking_point_parts.append("simultaneously harvesting available tax losses to neutralize capital gains tax friction")
                     benefits.append(f"📉 **Tax Optimization:** {main_tax.recommendation}")
 
                 if main_life:
                     title_parts.append("Milestone Ring-Fencing")
                     summary_parts.append(f"pre-fund {main_life.headline.lower()}")
-                    action_bullets.append(f"3. **Pre-Fund Life Milestone:** {main_life.recommendation}")
+                    action_bullets.append(f"{idx}. **Pre-Fund Life Milestone:** {main_life.recommendation}")
+                    idx += 1
                     talking_point_parts.append(f"pre-funding your upcoming liquidity milestone ({main_life.headline})")
                     benefits.append(f"🏡 **Milestone Coverage:** {main_life.recommendation}")
 
                 if main_cash:
                     title_parts.append("Cash Reserve Fortification")
                     summary_parts.append("sweep residual proceeds into Cash & Equivalents")
-                    action_bullets.append(f"4. **Fortify Cash Reserves:** {main_cash.recommendation}")
+                    action_bullets.append(f"{idx}. **Fortify Cash Reserves:** {main_cash.recommendation}")
+                    idx += 1
                     talking_point_parts.append("reinforcing your Cash & Equivalents buffer safely above mandate minimums")
                     benefits.append(f"💧 **Liquidity Fortification:** {main_cash.recommendation}")
 
