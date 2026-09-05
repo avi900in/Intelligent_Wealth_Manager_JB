@@ -6,6 +6,7 @@ Relationship Manager retains full autonomy and approval control.
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import json
 import html
@@ -292,6 +293,7 @@ def show_breaches_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         if sel_idx < len(df_b):
             target_cid = df_b.iloc[sel_idx]["client_id"]
             st.session_state.selected_client_id = target_cid
+            st.session_state.jump_to_tab = 1
             st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -306,6 +308,7 @@ def show_breaches_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
         if st.button("🚀 Open Dossier", key="btn_jump_from_breach_dialog", use_container_width=True):
             st.session_state.selected_client_id = sel_client.split(" — ")[0]
+            st.session_state.jump_to_tab = 1
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -363,6 +366,7 @@ def show_ltv_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         if sel_idx < len(df_ltv):
             target_cid = df_ltv.iloc[sel_idx]["client_id"]
             st.session_state.selected_client_id = target_cid
+            st.session_state.jump_to_tab = 1
             st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -377,6 +381,7 @@ def show_ltv_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
         if st.button("🚀 Open Dossier", key="btn_jump_from_ltv_dialog", use_container_width=True):
             st.session_state.selected_client_id = sel_ltv_client.split(" — ")[0]
+            st.session_state.jump_to_tab = 1
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -457,6 +462,7 @@ def show_liquidity_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         if sel_idx < len(df_liq):
             target_cid = df_liq.iloc[sel_idx]["client_id"]
             st.session_state.selected_client_id = target_cid
+            st.session_state.jump_to_tab = 1
             st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -471,6 +477,7 @@ def show_liquidity_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
         if st.button("🚀 Open Dossier", key="btn_jump_from_liq_dialog", use_container_width=True):
             st.session_state.selected_client_id = sel_liq_client.split(" — ")[0]
+            st.session_state.jump_to_tab = 1
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -533,6 +540,34 @@ tab_queue, tab_client360, tab_actions, tab_pack, tab_vector = st.tabs([
     "📄 Client Meeting Pack",
     "🧠 Semantic Navigator"
 ])
+
+tab_target_index = st.session_state.pop("jump_to_tab", None)
+if tab_target_index is not None:
+    components.html(
+        f"""
+        <script>
+            function activateTab() {{
+                try {{
+                    const mainTabContainer = window.parent.document.querySelector('[data-testid="stTabs"]');
+                    if (mainTabContainer) {{
+                        const tabs = mainTabContainer.querySelectorAll('button[role="tab"], button[data-baseweb="tab"]');
+                        if (tabs && tabs.length > {tab_target_index}) {{
+                            tabs[{tab_target_index}].click();
+                        }}
+                    }}
+                }} catch (e) {{
+                    console.error("Tab switch error:", e);
+                }}
+            }}
+            activateTab();
+            setTimeout(activateTab, 60);
+            setTimeout(activateTab, 180);
+            setTimeout(activateTab, 350);
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
 
 # ---------------------------------------------------------
 # TAB 1: MORNING CALL QUEUE (BOOK PRIORITIZATION)
@@ -621,6 +656,7 @@ with tab_queue:
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button(f"🔍 Open Dossier", key=f"btn_open_{cid}", use_container_width=True):
                     st.session_state.selected_client_id = item["client_id"]
+                    st.session_state.jump_to_tab = 1
                     st.rerun()
 
             st.markdown("<hr style='border-color: rgba(255,255,255,0.06); margin: 0.75rem 0;'>", unsafe_allow_html=True)
