@@ -1030,6 +1030,43 @@ with tab_actions:
 
                 st.markdown("<hr style='border-color: rgba(255,255,255,0.12); margin: 1.5rem 0;'>", unsafe_allow_html=True)
 
+    # Cross-Specialist Strategic Optimizations (Master LLM Orchestrator)
+    cross_specialist_optimizations = client_result.get("cross_specialist_optimizations", [])
+    if cross_specialist_optimizations:
+        st.markdown("#### 🧠 Master Orchestrator Strategic Optimizations (Cross-Specialist Alpha)")
+        for opt in cross_specialist_optimizations:
+            opt_id = opt.get("id", "")
+            opt_title = html.escape(str(opt.get("title", "")))
+            opt_desc = html.escape(str(opt.get("description", "")))
+            opt_saving = html.escape(str(opt.get("expected_alpha_or_saving", "")))
+            opt_rat = html.escape(str(opt.get("strategic_rationale", "")))
+            agents = opt.get("participating_agents", [])
+            steps = opt.get("implementation_steps", [])
+
+            agent_badges = "".join([f'<span class="jb-badge jb-badge-fact" style="margin-right: 4px;">{a.upper()}</span>' for a in agents])
+
+            st.markdown(f"""
+            <div class="jb-rec-card" style="border: 1.5px solid rgba(85,239,196,0.5); background: linear-gradient(135deg, rgba(85,239,196,0.08) 0%, rgba(13,30,54,0.8) 100%); border-radius: 8px; padding: 1.15rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <div>
+                        <span class="jb-badge" style="background: #00B894; color: #FFF; font-weight: 700;">🧠 Strategic Alpha</span>
+                        {agent_badges}
+                    </div>
+                    <div style="font-size: 0.8rem; color: #55EFC4; font-family: monospace;">{opt_id}</div>
+                </div>
+                <div style="font-size: 1.05rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.3rem;">{opt_title}</div>
+                <div style="font-size: 0.88rem; color: #E2E8F0; margin-bottom: 0.6rem;">{opt_desc}</div>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem; background: rgba(8,20,38,0.6); padding: 0.75rem; border-radius: 6px; font-size: 0.84rem;">
+                    <div><span style="color: #55EFC4; font-weight: 600;">💡 Expected Benefit:</span> <span style="color: #FFF;">{opt_saving}</span></div>
+                    <div><span style="color: #94A3B8; font-weight: 600;">🎯 Strategic Rationale:</span> <span style="color: #CBD5E1;">{opt_rat}</span></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            if steps:
+                with st.expander(f"📋 View Execution Roadmap for {opt_title}"):
+                    for s in steps:
+                        st.markdown(f"- {s}")
+
     # Cross-Agent Conflicts Surfacing
     if conflicts:
         st.markdown("#### ⚡ Cross-Agent Tradeoffs & Conflict Resolution")

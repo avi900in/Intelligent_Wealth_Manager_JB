@@ -9,7 +9,8 @@ import os
 from typing import Dict, List, Any, Optional, Tuple
 from src.data_layer import WealthDataRepository
 from src.deterministic_analytics import DeterministicAnalytics
-from src.agent_state import AgentGraphState, Recommendation
+from src.llm_engine import LLMEngine
+from src.agent_state import AgentGraphState, Recommendation, CrossSpecialistOptimization
 from src.specialist_agents import (
     ContextAssembler,
     RebalancingAgent,
@@ -17,14 +18,17 @@ from src.specialist_agents import (
     LifeEventPlanningAgent,
     LiquidityCreditRiskAgent,
     MarketImpactAgent,
-    RMNotesAgent
+    RMNotesAgent,
+    make_rec_id
 )
+import json
 
 class ClientOrchestrator:
-    """5.1 Per-Client Orchestration Engine."""
+    """5.1 Per-Client Master LLM Orchestration & Strategy Engine."""
     def __init__(self, analytics: Optional[DeterministicAnalytics] = None):
         self.analytics = analytics or DeterministicAnalytics()
         self.repo = self.analytics.repo
+        self.llm = LLMEngine.get_instance()
         self.context_assembler = ContextAssembler(self.analytics)
         self.rebalancing_agent = RebalancingAgent(self.analytics)
         self.tax_agent = TaxOptimizationAgent(self.analytics)
@@ -34,7 +38,11 @@ class ClientOrchestrator:
         self.rm_notes_agent = RMNotesAgent(self.analytics)
 
     def run_client(self, client_id: str, snapshot_date: str = "2026-08-26") -> Dict[str, Any]:
-        """Runs all specialist agents for a client, surfaces conflicts, and runs compliance gate."""
+        """
+        Runs all specialist agents for a client, executes LLM Master Orchestration 
+        to synthesize/deduplicate recommendations, surface conflicts, discover synergistic 
+        comingling packages & cross-specialist optimizations, with a robust deterministic fallback.
+        """
         # 1. Context Assembly
         context = self.context_assembler.assemble(client_id, snapshot_date)
         
@@ -47,36 +55,249 @@ class ClientOrchestrator:
         raw_recs.extend(self.market_agent.run(context, snapshot_date))
         raw_recs.extend(self.rm_notes_agent.run(context, snapshot_date))
 
-        # 3. Dynamic Orchestrator Deduplication & Cross-Agent Synthesis
-        recs = self._deduplicate_and_synthesize_recs(raw_recs, context, snapshot_date)
+        # 3. Master LLM Orchestration Attempt
+        llm_orchestration = self._run_llm_orchestrator(raw_recs, context, snapshot_date)
 
-        # 4. Detect Conflicts
-        conflicts = self._detect_conflicts(recs, context)
+        if llm_orchestration:
+            recs = llm_orchestration["recommendations"]
+            conflicts = llm_orchestration["conflicts"]
+            comingling_opportunities = llm_orchestration["comingling_opportunities"]
+            cross_specialist_optimizations = llm_orchestration["cross_specialist_optimizations"]
+            brief = llm_orchestration["client_brief"]
+        else:
+            # Deterministic Fallback Pipeline
+            recs = self._deduplicate_and_synthesize_recs(raw_recs, context, snapshot_date)
+            conflicts = self._detect_conflicts(recs, context)
+            comingling_opportunities = self._detect_comingling_opportunities(recs, context, snapshot_date)
+            cross_specialist_optimizations = self._detect_cross_specialist_optimizations(recs, context, snapshot_date)
+            brief = self._synthesize_brief(client_id, recs, conflicts, context)
 
-        # 5. Discover Comingling & Clubbing Opportunities
-        comingling_opportunities = self._detect_comingling_opportunities(recs, context, snapshot_date)
-
-        # 6. Compliance & Suitability Gate
+        # 4. Compliance & Suitability Gate (Always Deterministic Ground Truth)
         compliance_flags = self._compliance_gate(recs, context)
 
-        # 7. Client Brief Synthesis
-        brief = self._synthesize_brief(client_id, recs, conflicts, context)
-
-        # 8. Client Urgency Score & Breakdown
+        # 5. Client Urgency Score & Factor Breakdown
         urgency_score, urgency_breakdown = self._compute_urgency(recs, context, snapshot_date)
 
         return {
             "client_id": client_id,
             "snapshot_date": snapshot_date,
             "client_context": context,
-            "recommendations": [r.model_dump() for r in recs],
+            "recommendations": [r.model_dump() if hasattr(r, "model_dump") else r for r in recs],
             "conflicts": conflicts,
             "comingling_opportunities": comingling_opportunities,
+            "cross_specialist_optimizations": cross_specialist_optimizations,
             "compliance_flags": compliance_flags,
             "client_brief": brief,
             "urgency_score": round(urgency_score, 1),
             "urgency_breakdown": urgency_breakdown
         }
+
+    def _run_llm_orchestrator(self, raw_recs: List[Recommendation], context: Dict[str, Any], snapshot_date: str) -> Optional[Dict[str, Any]]:
+        """Executes LLM reasoning across all specialist agent proposals."""
+        if not self.llm.is_live_llm_active():
+            return None
+
+        client_id = context["client_id"]
+        client_name = context["client_name"]
+
+        system_prompt = f"""You are the Master Wealth Orchestrator & Chief Investment Officer at Bank Julius Baer.
+Your role is to orchestrate, synthesize, deduplicate, and optimize the multi-agent recommendation stream for private banking clients.
+
+You receive raw specialist recommendations from:
+- Portfolio Rebalancing Agent (drift, concentration breaches)
+- Tax Optimization Agent (tax-loss harvesting, domicile rules)
+- Life Event & Milestones Agent (upcoming commitments, family milestones)
+- Liquidity & Credit Risk Agent (LTV headroom, capital call coverage)
+- Global Macro & Market Impact Agent (shock transmission, geopolitical events)
+- RM Notes & Sentiment Agent (client constraints, emotional blockers, legacy mandates)
+
+Your core objectives:
+1. Deduplicate & Reconcile: If Rebalancing already trims an asset class/holding, absorb and synthesize the Market Agent shock transmission into the rebalancing recommendation rather than producing redundant actions.
+2. Resolve multi-agent conflicts and establish clear priority tradeoffs.
+3. Club high-value synergistic multi-objective execution packages (e.g. De-risking ↔ Tax-Loss Harvesting ↔ Milestone Ring-Fencing ↔ Cash Buffering).
+4. Discover novel cross-specialist strategic optimizations (e.g. cross-sleeve tax alpha, staged liquidity immunization to eliminate cash drag, collateral downside preservation).
+5. Produce an executive client briefing with structured talking points tailored in elite Julius Baer private banking tone.
+
+Respond ONLY with valid JSON matching this schema:
+{{
+  "synthesized_recommendations": [
+    {{
+      "id": "REC-xxx",
+      "client_id": "{client_id}",
+      "portfolio_id": null,
+      "portfolio_name": null,
+      "agent": "rebalancing|tax|life_event|liquidity|market|rm_notes|orchestrator",
+      "priority": "high|medium|low",
+      "confidence_tier": "fact|rule|model",
+      "headline": "...",
+      "recommendation": "...",
+      "talking_point": "...",
+      "rm_note_influence": "...",
+      "compliance_status": "pass|needs_review|blocked",
+      "evidence": [
+        {{
+          "source_function": "...",
+          "detail": "...",
+          "as_of_date": "{snapshot_date}",
+          "raw_metric_value": null
+        }}
+      ]
+    }}
+  ],
+  "conflicts": [
+    {{
+      "id": "CONF-xxx",
+      "title": "...",
+      "rec_a": "...",
+      "rec_b": "...",
+      "description": "...",
+      "tradeoff": "...",
+      "recommended_resolution": "..."
+    }}
+  ],
+  "comingling_opportunities": [
+    {{
+      "id": "PKG-SYN-{client_id}-01",
+      "title": "...",
+      "opportunity_type": "multi_objective_tax_liquidity_rebalance",
+      "clubbed_rec_ids": ["..."],
+      "summary": "...",
+      "unified_action": "...",
+      "unified_talking_point": "...",
+      "financial_benefits": ["..."]
+    }}
+  ],
+  "cross_specialist_optimizations": [
+    {{
+      "id": "OPT-xxx",
+      "title": "...",
+      "optimization_type": "tax_alpha_rebalance|liquidity_immunization|duration_macro_overlay|holistic_synergy",
+      "participating_agents": ["rebalancing", "tax"],
+      "description": "...",
+      "strategic_rationale": "...",
+      "expected_alpha_or_saving": "...",
+      "implementation_steps": ["1. ...", "2. ..."]
+    }}
+  ],
+  "client_brief": {{
+    "headline": "...",
+    "primary_action": "...",
+    "tone_advice": "...",
+    "key_talking_points": ["..."]
+  }}
+}}"""
+
+        raw_recs_dump = [r.model_dump() for r in raw_recs]
+        user_prompt = f"""Client Profile:
+- Client ID: {client_id}
+- Client Name: {client_name}
+- Total AUM: USD {context.get('total_aum', 0):,.2f}
+- Risk Profile: {context.get('risk_profile', 'Moderate')}
+- Domicile / Tax Jurisdiction: {context.get('domicile', 'Global')} / {context.get('tax_jurisdiction', 'Global')}
+- Desk & Booking Centre: {context.get('desk', 'Private Banking')} ({context.get('booking_centre', 'Singapore')})
+- Last RM Contact: {context.get('last_meeting_date', 'Initial')} ({context.get('last_meeting_channel', 'N/A')})
+- Standing RM Notes / Constraints: {json.dumps(context.get('rm_notes_summary', {}))}
+
+Raw Specialist Agent Recommendations:
+{json.dumps(raw_recs_dump, indent=2)}
+
+Perform master orchestration, cross-agent deduplication, comingling package synthesis, and discover advanced cross-specialist optimizations."""
+
+        try:
+            parsed = self.llm.generate_json(user_prompt, system_prompt)
+            if not parsed or not isinstance(parsed, dict) or "synthesized_recommendations" not in parsed:
+                return None
+            
+            # Reconstruct typed recommendations
+            recs = []
+            for item in parsed.get("synthesized_recommendations", []):
+                try:
+                    recs.append(Recommendation(**item))
+                except Exception:
+                    continue
+            
+            if not recs:
+                return None
+
+            return {
+                "recommendations": recs,
+                "conflicts": parsed.get("conflicts", []),
+                "comingling_opportunities": parsed.get("comingling_opportunities", []),
+                "cross_specialist_optimizations": parsed.get("cross_specialist_optimizations", []),
+                "client_brief": parsed.get("client_brief", {})
+            }
+        except Exception:
+            return None
+
+    def _detect_cross_specialist_optimizations(self, recs: List[Recommendation], context: Dict[str, Any], snapshot_date: str) -> List[Dict[str, Any]]:
+        """
+        Discovers advanced cross-specialist strategic optimizations beyond single-agent proposals:
+        1. Multi-Sleeve Tax-Alpha Harvesting ↔ Mandate Realignment
+        2. Liquidity Runway Immunization ↔ Milestone Pre-Funding Schedule
+        3. Collateral Capital Efficiency ↔ Fixed Income Duration Hedging
+        """
+        optimizations = []
+        client_id = context["client_id"]
+
+        rebalance_recs = [r for r in recs if r.agent == "rebalancing"]
+        tax_recs = [r for r in recs if r.agent == "tax"]
+        life_recs = [r for r in recs if r.agent == "life_event"]
+        liq_recs = [r for r in recs if r.agent == "liquidity"]
+        market_recs = [r for r in recs if r.agent == "market"]
+
+        # Optimization 1: Cross-Sleeve Tax-Loss Neutralization on Mandate Trims
+        if rebalance_recs and tax_recs:
+            tax_loss_avail = sum(r.evidence[0].raw_metric_value or 0 for r in tax_recs if r.evidence)
+            optimizations.append({
+                "id": f"OPT-TAX-ALPHA-{client_id}",
+                "title": f"Cross-Sleeve Tax-Alpha Rebalancing Matrix ({context.get('tax_jurisdiction', 'Global')})",
+                "optimization_type": "tax_alpha_rebalance",
+                "participating_agents": ["rebalancing", "tax"],
+                "description": f"Synchronize portfolio mandate trimming with simultaneous realization of qualifying tax losses ({context.get('tax_jurisdiction', 'Global')}) across sleeves.",
+                "strategic_rationale": "Realizing mandate trimming without tax coordination creates immediate taxable capital gains drag. Cross-sleeve netting eliminates friction.",
+                "expected_alpha_or_saving": f"Tax shield of up to USD {tax_loss_avail:,.0f} in capital gains liability offset" if tax_loss_avail else "Substantial capital gains tax liability offset",
+                "implementation_steps": [
+                    "1. Match rebalancing sell orders directly against identified unrealized loss tax lots in qualifying sleeves.",
+                    "2. Execute loss harvesting prior to settlement of capital gains rebalancing transactions.",
+                    "3. Reinvest netted proceeds in adherence with 30-day wash-sale and local tax rules."
+                ]
+            })
+
+        # Optimization 2: Liquidity Runway Immunization with Milestone Schedule
+        if life_recs or liq_recs:
+            optimizations.append({
+                "id": f"OPT-LIQ-IMMUN-{client_id}",
+                "title": "Staged Liquidity Immunization & Cash Drag Elimination",
+                "optimization_type": "liquidity_immunization",
+                "participating_agents": ["liquidity", "life_event", "rebalancing"],
+                "description": "Establish dynamic short-duration liquidity laddering to fund upcoming capital calls and life milestones while keeping remaining assets fully invested.",
+                "strategic_rationale": "Holding uninvested cash causes substantial return drag in high-yield environments, while uncoordinated liquidations risk market timing penalties.",
+                "expected_alpha_or_saving": "Eliminates ~45-60 bps of annual cash drag across reserves while guaranteeing 100% milestone coverage",
+                "implementation_steps": [
+                    "1. Ring-fence required liquidity into short-dated Julius Baer Treasury / Money Market sweep.",
+                    "2. Structure tranche releases corresponding precisely to anticipated capital call / milestone call dates.",
+                    "3. Maintain full compounding exposure in core equity/credit sleeves until T-14 days before disbursement."
+                ]
+            })
+
+        # Optimization 3: Collateral Protection & Duration Hedging
+        if market_recs and any("LTV" in r.headline or "Credit" in r.headline or "Lombard" in r.headline for r in recs):
+            optimizations.append({
+                "id": f"OPT-COLLAT-HEDGE-{client_id}",
+                "title": "Collateral Value Preservation & Dynamic LTV Shield",
+                "optimization_type": "duration_macro_overlay",
+                "participating_agents": ["market", "liquidity", "rebalancing"],
+                "description": "Implement protective duration overlay and structured downside collars on credit facility collateral assets.",
+                "strategic_rationale": "Macro rate spikes and market volatility can erode collateral lending values, inadvertently breaching covenant margin call buffers.",
+                "expected_alpha_or_saving": "Preserves USD lending headroom and prevents sudden margin calls under 150 bps rate shock",
+                "implementation_steps": [
+                    "1. Review collateral composition with Treasury & Credit Risk desk.",
+                    "2. Overlay structured capital protection or interest rate hedges on duration-sensitive collateral.",
+                    "3. Expand available buffer above the covenant margin call threshold."
+                ]
+            })
+
+        return optimizations
 
     def _deduplicate_and_synthesize_recs(self, recs: List[Recommendation], context: Dict[str, Any], snapshot_date: str) -> List[Recommendation]:
         """

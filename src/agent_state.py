@@ -32,6 +32,16 @@ class Recommendation(BaseModel):
     rm_status: str = "pending"  # pending | approved | dismissed | modified
     rm_comment: Optional[str] = None
 
+class CrossSpecialistOptimization(BaseModel):
+    id: str
+    title: str
+    optimization_type: str  # tax_alpha_rebalance | liquidity_immunization | duration_macro_overlay | holistic_synergy
+    participating_agents: List[str]
+    description: str
+    strategic_rationale: str
+    expected_alpha_or_saving: str
+    implementation_steps: List[str]
+
 class AgentGraphState(TypedDict):
     client_id: str
     snapshot_date: str
@@ -48,6 +58,8 @@ class AgentGraphState(TypedDict):
     # Generated recommendations per agent
     recommendations: List[Dict[str, Any]]
     conflicts: List[Dict[str, Any]]
+    comingling_opportunities: List[Dict[str, Any]]
+    cross_specialist_optimizations: List[Dict[str, Any]]
     compliance_flags: List[Dict[str, Any]]
     client_brief: Dict[str, Any]
     urgency_score: float
