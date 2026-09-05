@@ -121,39 +121,48 @@ class ClientOrchestrator:
                 clubbed_ids.append(main_cash.id)
 
             if len(clubbed_items) >= 2:
-                # Extract instrument name or asset class
-                eq_name = "Global Developed Equity Index Fund"
-                if "concentration" in main_trim.headline.lower() and ":" in main_trim.headline:
-                    eq_name = main_trim.headline.split(":")[1].split("represents")[0].strip()
+                # Dynamically derive components from actual clubbed recommendations
+                trim_target = main_trim.headline
+                if ":" in main_trim.headline:
+                    trim_target = main_trim.headline.split(":")[1].split("represents")[0].strip()
+                elif "overweight" in main_trim.headline.lower():
+                    trim_target = main_trim.headline.split("overweight")[0].strip()
 
-                title = f"Multi-Objective Strategy: Equity De-risking ↔ Tax-Loss Shield ↔ Property Milestone & Cash Fortification"
-                
-                summary = (
-                    f"Synergistic execution package clubbing {len(clubbed_items)} specialist actions: "
-                    f"De-risk {eq_name}, deploy USD 125,280 in tax-loss harvesting to neutralize capital gains, "
-                    f"sweep liquidation proceeds into Cash & Equivalents to lift allocation above the 2.0% mandate threshold, "
-                    f"and pre-fund the upcoming SGD 9,000,000 property purchase deposit."
-                )
+                title_parts = [f"De-risking ({trim_target})"]
+                summary_parts = [f"De-risk {main_trim.headline}"]
+                action_bullets = [f"1. **De-Risk Mandate Breach:** {main_trim.recommendation}"]
+                talking_point_parts = [f"trimming your position ({trim_target}) to restore mandate adherence"]
+                benefits = [f"🛡️ **Mandate Governance:** {main_trim.recommendation}"]
 
-                unified_action = (
-                    f"1. **De-Risk Concentration:** Trim overweight position in {eq_name} to restore mandate concentration compliance.\n"
-                    f"2. **Harvest Tax Losses:** Simultaneously realize qualifying unrealized loss positions to shield taxable capital gains.\n"
-                    f"3. **Fortify Cash Buffer:** Allocate rebalancing proceeds to Cash & Equivalents to eliminate the 2.0% minimum band warning.\n"
-                    f"4. **Pre-Fund Life Milestone:** Ring-fence dedicated liquidity ahead of the 2027 property purchase milestone, avoiding market timing risk."
-                )
+                if main_tax:
+                    title_parts.append("Tax-Loss Shield")
+                    summary_parts.append(f"execute {main_tax.headline.lower()} to shield taxable gains")
+                    action_bullets.append(f"2. **Harvest Tax Losses:** {main_tax.recommendation}")
+                    talking_point_parts.append("simultaneously harvesting available tax losses to neutralize capital gains tax friction")
+                    benefits.append(f"📉 **Tax Optimization:** {main_tax.recommendation}")
 
+                if main_life:
+                    title_parts.append("Milestone Ring-Fencing")
+                    summary_parts.append(f"pre-fund {main_life.headline.lower()}")
+                    action_bullets.append(f"3. **Pre-Fund Life Milestone:** {main_life.recommendation}")
+                    talking_point_parts.append(f"pre-funding your upcoming liquidity milestone ({main_life.headline})")
+                    benefits.append(f"🏡 **Milestone Coverage:** {main_life.recommendation}")
+
+                if main_cash:
+                    title_parts.append("Cash Reserve Fortification")
+                    summary_parts.append("sweep residual proceeds into Cash & Equivalents")
+                    action_bullets.append(f"4. **Fortify Cash Reserves:** {main_cash.recommendation}")
+                    talking_point_parts.append("reinforcing your Cash & Equivalents buffer safely above mandate minimums")
+                    benefits.append(f"💧 **Liquidity Fortification:** {main_cash.recommendation}")
+
+                title = f"Multi-Objective Strategy: {' ↔ '.join(title_parts)}"
+                summary = f"Synergistic execution package clubbing {len(clubbed_items)} specialist actions: " + ", ".join(summary_parts) + "."
+                unified_action = "\n".join(action_bullets)
                 unified_talking_point = (
                     f"Rather than addressing your portfolio adjustments piecemeal, we have structured a unified multi-objective execution package: "
-                    f"by trimming your overweight position in {eq_name}, we can simultaneously harvest available tax losses to neutralize capital gains tax drag, "
-                    f"fortify your Cash & Equivalents reserve safely above the 2.0% mandate boundary, and pre-fund your upcoming SGD 9.0M property deposit well in advance."
+                    + ", ".join(talking_point_parts) + "."
                 )
-
-                financial_benefits = [
-                    f"🛡️ **Concentration De-Risking:** Reduces single-fund concentration in {eq_name} back within the 15.0% mandate governance limit.",
-                    f"📉 **Tax Shielding:** Offsets realized capital gains with harvested tax loss deductions.",
-                    f"💧 **Liquidity Fortification:** Elevates Cash & Equivalents safely above the tight 2.0% mandate floor.",
-                    f"🏡 **Milestone Ring-Fencing:** Pre-funds the SGD 9,000,000 property deposit ahead of schedule without forced market liquidation."
-                ]
+                financial_benefits = benefits
 
                 opportunities.append({
                     "id": f"PKG-SYN-{context['client_id']}-01",
