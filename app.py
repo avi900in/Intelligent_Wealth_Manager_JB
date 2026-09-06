@@ -159,7 +159,7 @@ if not st.session_state.authenticated:
                 else:
                     st.error("Please enter a valid user name.")
 
-        st.caption("<div style='text-align: center; margin-top: 0.35rem;'>Bank Julius Baer & Co. Ltd. • Multi-Factor Secured Session • For Authorized RM Personnel Only</div>", unsafe_allow_html=True)
+        st.caption("<div style='text-align: center; margin-top: 0.35rem;'>© Avijit Ghosh • Multi-Factor Secured Session • For Authorized RM Personnel Only</div>", unsafe_allow_html=True)
     st.stop()
 
 # --- AUTHENTICATED DASHBOARD VIEW ---
