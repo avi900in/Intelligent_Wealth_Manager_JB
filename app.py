@@ -421,7 +421,7 @@ def render_bottom_footer(repo_instance, analytics_instance, key_prefix: str = "m
     with f_col1:
         st.markdown("""
         <div style="font-size: 0.78rem; color: #94A3B8; padding-top: 0.2rem;">
-            <strong style="color: #C5A059;">Bank Julius Baer & Co. Ltd.</strong> • JB Pulse — Wealth Intelligence<br>
+            <strong style="color: #C5A059;">© Avijit Ghosh</strong> • JB Pulse — Wealth Intelligence<br>
             SingHacks 2026 • Confidential & Licensed for Private Banking RM Use
         </div>
         """, unsafe_allow_html=True)
