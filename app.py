@@ -28,7 +28,7 @@ from src.cockpit_modules import (
 # Set Streamlit Page Configuration
 st.set_page_config(
     page_title="JB Pulse — Wealth Intelligence",
-    page_icon="🏦",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -131,7 +131,7 @@ if not st.session_state.authenticated:
                 JB Pulse
             </div>
             <div class="jb-login-subtitle">Wealth Intelligence RM Portal • Bank Julius Baer</div>
-            <div class="jb-login-badge">🔐 Relationship Manager Authentication Required</div>
+            <div class="jb-login-badge">Relationship Manager Authentication Required</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -139,7 +139,7 @@ if not st.session_state.authenticated:
             user_input = st.text_input("User Name", value="Priscilla Ong", placeholder="Enter RM User Name")
             pass_input = st.text_input("Password", type="password", value="••••••••", placeholder="Enter your secure password")
             
-            submit_login = st.form_submit_button("🔐 Sign In to JB Pulse", use_container_width=True)
+            submit_login = st.form_submit_button("Sign In to JB Pulse", use_container_width=True)
             
             if submit_login:
                 if user_input.strip():
@@ -159,14 +159,14 @@ if not st.session_state.authenticated:
                 else:
                     st.error("Please enter a valid user name.")
 
-        st.caption("<div style='text-align: center; margin-top: 0.35rem;'>🔒 Bank Julius Baer & Co. Ltd. • Multi-Factor Secured Session • For Authorized RM Personnel Only</div>", unsafe_allow_html=True)
+        st.caption("<div style='text-align: center; margin-top: 0.35rem;'>Bank Julius Baer & Co. Ltd. • Multi-Factor Secured Session • For Authorized RM Personnel Only</div>", unsafe_allow_html=True)
     st.stop()
 
 # --- AUTHENTICATED DASHBOARD VIEW ---
 
 # Sidebar: Controls, Active User Profile & Desk Filters
 with st.sidebar:
-    st.markdown("### 🔐 RM Identity & Coverage Scope")
+    st.markdown("### RM Identity & Coverage Scope")
     
     current_rm_id = st.session_state.get("logged_in_rm_id", "RM-SG-014")
     rm_keys = list(RM_PROFILES.keys())
@@ -192,20 +192,20 @@ with st.sidebar:
     st.markdown(f"""
     <div style="background: rgba(197, 168, 128, 0.12); border: 1px solid rgba(197, 168, 128, 0.3); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
         <div style="font-size: 0.72rem; color: #C5A880; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em;">Active Coverage Profile</div>
-        <div style="font-size: 1.05rem; font-weight: 700; color: #FFFFFF; margin-top: 0.2rem;">👤 {st.session_state.logged_in_user}</div>
+        <div style="font-size: 1.05rem; font-weight: 700; color: #FFFFFF; margin-top: 0.2rem;">{st.session_state.logged_in_user}</div>
         <div style="font-size: 0.78rem; color: #94A3B8;">{st.session_state.logged_in_rm_id} • {st.session_state.logged_in_desk}</div>
         <div style="margin-top: 0.4rem;"><span class="jb-badge {role_badge_class}" style="font-size: 0.7rem;">{active_rm_info['role']}</span></div>
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("🚪 Sign Out", use_container_width=True):
+    if st.button("Sign Out", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### 🛡️ Client Privacy & Presentation Mode")
+    st.markdown("### Client Privacy & Presentation Mode")
     privacy_toggle = st.toggle(
-        "🛡️ Zero-PII Presentation Mode",
+        "Zero-PII Presentation Mode",
         value=st.session_state.get("privacy_mode", False),
         help="Mask all client names, account IDs, and sensitive identifiers across all views for secure screen-sharing with clients or external audits."
     )
@@ -214,21 +214,21 @@ with st.sidebar:
         st.rerun()
 
     if st.session_state.get("privacy_mode", False):
-        st.markdown('<div style="background: rgba(46, 204, 113, 0.15); border: 1px solid #2ECC71; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.78rem; color: #2ECC71; font-weight: 600; margin-bottom: 0.75rem;">🔒 Presentation Privacy Active: All Client PII Masked</div>', unsafe_allow_html=True)
+        st.markdown('<div style="background: rgba(46, 204, 113, 0.15); border: 1px solid #2ECC71; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.78rem; color: #2ECC71; font-weight: 600; margin-bottom: 0.75rem;">Presentation Privacy Active: All Client PII Masked</div>', unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("### 🏛️ RM Workspace Controls")
+    st.markdown("### RM Workspace Controls")
     
     snapshot_dates = repo.get_snapshot_dates()
     selected_snapshot = st.selectbox(
-        "📅 Analysis Snapshot Date",
+        "Analysis Snapshot Date",
         options=snapshot_dates,
         index=len(snapshot_dates) - 1,
         help="Deterministic calculations will run strictly against this historical valuation snapshot."
     )
 
     desk_filter = st.selectbox(
-        "📍 Desk & Booking Centre Filter",
+        "Desk & Booking Centre Filter",
         options=[
             "All Booking Desks (20)",
             "Singapore Booking Centre (11)",
@@ -242,16 +242,16 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown("### 🤖 Intelligence Architecture")
+    st.markdown("### Intelligence Architecture")
     st.caption("Multi-Agent LangGraph Framework • Llama-3.3-70B • ChromaDB Vector Memory")
     
     if llm_engine.is_live_llm_active():
-        st.markdown('<span class="jb-badge jb-badge-low">🟢 Live Multi-Agent LLM Active</span>', unsafe_allow_html=True)
+        st.markdown('<span class="jb-badge jb-badge-low">Live Multi-Agent LLM Active</span>', unsafe_allow_html=True)
     else:
-        st.markdown('<span class="jb-badge jb-badge-fact">🔵 Deterministic Multi-Agent Active</span>', unsafe_allow_html=True)
+        st.markdown('<span class="jb-badge jb-badge-fact">Deterministic Multi-Agent Active</span>', unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("### 🛡️ Compliance & Governance")
+    st.markdown("### Compliance & Governance")
     st.caption("• Row-Level Security (RLS) & Cross-RM Data Isolation.")
     st.caption("• Deterministic facts isolated from LLM synthesis.")
     st.caption("• RM notes act as active standing overrides.")
@@ -275,15 +275,15 @@ st.markdown(render_jb_header(
 # TOP NAVIGATION: TOP-RIGHT HAMBURGER MENU & BREADCRUMB
 # ---------------------------------------------------------
 NAV_MODULES = [
-    "🏛️ JB Pulse - Wealth Intelligence",
-    "🧪 Portfolio Stress Testing Lab",
-    "💬 Trigger-to-Conversation Engine",
-    "👤 Client Digital Twin",
-    "🔍 Explainable AI"
+    "JB Pulse - Wealth Intelligence",
+    "Portfolio Stress Testing Lab",
+    "Trigger-to-Conversation Engine",
+    "Client Digital Twin",
+    "Explainable AI"
 ]
 
 if "active_nav_module" not in st.session_state:
-    st.session_state.active_nav_module = "🏛️ JB Pulse - Wealth Intelligence"
+    st.session_state.active_nav_module = "JB Pulse - Wealth Intelligence"
 
 nav_bar_col1, nav_bar_col2 = st.columns([5.5, 2.5])
 
@@ -298,7 +298,7 @@ with nav_bar_col1:
     """, unsafe_allow_html=True)
 
 with nav_bar_col2:
-    with st.popover("☰ Navigation Menu", use_container_width=True):
+    with st.popover("Navigation Menu", use_container_width=True):
         st.markdown("<div style='font-size: 0.72rem; color: #C5A059; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem;'>Switch Advisory Workspace</div>", unsafe_allow_html=True)
         for idx, mod in enumerate(NAV_MODULES):
             is_active = (st.session_state.active_nav_module == mod)
@@ -314,7 +314,7 @@ st.markdown("<div style='margin-bottom: 0.85rem;'></div>", unsafe_allow_html=Tru
 if not active_rm_info.get("accessible", True):
     st.markdown("""
     <div style="background: rgba(220, 38, 38, 0.08); border: 1.5px solid rgba(220, 38, 38, 0.4); border-radius: 12px; padding: 2.5rem; margin: 2rem 0; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
-        <div style="font-size: 3rem; margin-bottom: 0.75rem;">🔒</div>
+        <div style="font-size: 1.1rem; margin-bottom: 0.75rem; color: #C5A880; font-weight: 700; text-transform: uppercase;">Restricted Access</div>
         <div style="font-size: 1.4rem; font-weight: 700; color: #FF7675; margin-bottom: 0.6rem; letter-spacing: 0.02em;">Bank Julius Baer Confidentiality & Row-Level Data Isolation Enforced</div>
         <div style="font-size: 0.98rem; color: #E2E8F0; max-width: 700px; margin: 0 auto 1.25rem auto; line-height: 1.6;">
             You are currently authenticated as <strong>Christian Weber (RM-ZH-002 — Swiss & European Private Banking Desk)</strong>.<br>
@@ -328,7 +328,7 @@ if not active_rm_info.get("accessible", True):
             <span>Access Policy: <strong style="color: #55EFC4;">RLS Block Active</strong></span>
         </div>
         <div style="font-size: 0.85rem; color: #C5A880; margin-top: 1.5rem;">
-            💡 <em>To view the Asia JB Pulse - Wealth Intelligence platform, switch to <strong>Priscilla Ong (RM-SG-014)</strong> or <strong>Marc Guggenheim (DH-SG-001 — Supervisory Desk Head)</strong> using the sidebar profile switcher.</em>
+            <em>To view the Asia JB Pulse - Wealth Intelligence platform, switch to <strong>Priscilla Ong (RM-SG-014)</strong> or <strong>Marc Guggenheim (DH-SG-001 — Supervisory Desk Head)</strong> using the sidebar profile switcher.</em>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -337,9 +337,9 @@ if not active_rm_info.get("accessible", True):
 # ---------------------------------------------------------
 # GLOBAL FOOTER DIALOGS & FOOTER COMPONENT
 # ---------------------------------------------------------
-@st.dialog("🎫 Raise Support / Advisory Ticket", width="medium")
+@st.dialog("Raise Support / Advisory Ticket", width="medium")
 def show_raise_ticket_dialog():
-    st.markdown("### 🎫 Raise Support or Advisory Ticket")
+    st.markdown("### Raise Support or Advisory Ticket")
     st.caption("Submit an operational inquiry, trade execution dispute, or mandate reclassification request.")
     
     t_type = st.selectbox("Ticket Category", [
@@ -354,32 +354,32 @@ def show_raise_ticket_dialog():
     t_client = st.text_input("Client ID / Name (Optional)", value=st.session_state.get("selected_client_id", "CL-0001"))
     t_desc = st.text_area("Ticket Description & Context", placeholder="Describe the issue, requested limit increase, or trade override...")
     
-    if st.button("🚀 Submit Ticket", type="primary", use_container_width=True):
-        st.success("✅ Ticket #JB-2026-8941 successfully created and dispatched to Julius Baer Operations Desk.")
+    if st.button("Submit Ticket", type="primary", use_container_width=True):
+        st.success("Ticket #JB-2026-8941 successfully created and dispatched to Julius Baer Operations Desk.")
 
-@st.dialog("📞 Julius Baer Internal Support Directory", width="medium")
+@st.dialog("Julius Baer Internal Support Directory", width="medium")
 def show_contact_support_dialog():
-    st.markdown("### 📞 Private Banking & Desk Support")
+    st.markdown("### Private Banking & Desk Support")
     st.caption("Direct hotlines for Priscilla Ong (Asia Desk — Singapore & Hong Kong)")
     
     st.markdown("""
     <div style="background: rgba(12, 26, 48, 0.8); border: 1px solid rgba(197, 160, 89, 0.3); border-radius: 8px; padding: 1rem; font-size: 0.88rem; line-height: 1.8;">
-        <strong>🏛️ Singapore Dealing Room & Trading Desk:</strong><br>
+        <strong>Singapore Dealing Room & Trading Desk:</strong><br>
         • Hotline: <code>+65 6827 1800</code> • Dealing Order Desk: <code>sg-execution@juliusbaer.com</code><br><br>
-        <strong>🏢 Hong Kong Advisory & Execution Hub:</strong><br>
+        <strong>Hong Kong Advisory & Execution Hub:</strong><br>
         • Hotline: <code>+852 2899 4800</code> • HK Desk: <code>hk-dealing@juliusbaer.com</code><br><br>
-        <strong>💳 Lombard Lending & Credit Structuring:</strong><br>
+        <strong>Lombard Lending & Credit Structuring:</strong><br>
         • Credit Hotline: <code>+65 6827 1950</code> • Lead Approver: <code>credit-asia@juliusbaer.com</code><br><br>
-        <strong>🔒 Compliance & Supervisory Officer (Desk Head):</strong><br>
+        <strong>Compliance & Supervisory Officer (Desk Head):</strong><br>
         • Marc Guggenheim (DH-SG-001): <code>marc.guggenheim@juliusbaer.com</code><br><br>
-        <strong>💻 24/7 IT Infrastructure & Avaloq Support:</strong><br>
+        <strong>24/7 IT Infrastructure & Avaloq Support:</strong><br>
         • IT Helpdesk: <code>+41 58 888 1111</code> (Zurich / Global Support)
     </div>
     """, unsafe_allow_html=True)
 
-@st.dialog("📰 Real-Time Macro & Geopolitical News Alerts", width="large")
+@st.dialog("Real-Time Macro & Geopolitical News Alerts", width="large")
 def show_news_alert_dialog(repo_instance):
-    st.markdown("### 📰 2026 Market Events & News Wire")
+    st.markdown("### 2026 Market Events & News Wire")
     st.caption("Authoritative geopolitical and macro transmissions calibrated against event_log.csv")
     
     events = repo_instance.get_events()
@@ -398,9 +398,9 @@ def show_news_alert_dialog(repo_instance):
         use_container_width=True
     )
 
-@st.dialog("🔒 Data Privacy & Swiss Banking Secrecy Policy", width="medium")
+@st.dialog("Data Privacy & Swiss Banking Secrecy Policy", width="medium")
 def show_data_privacy_dialog():
-    st.markdown("### 🔒 Julius Baer Data Privacy & Protection Policy")
+    st.markdown("### Julius Baer Data Privacy & Protection Policy")
     st.caption("Compliance with Swiss Federal Banking Act (Article 47), MAS Notice 644, and HKMA PDPO")
     
     st.markdown("""
@@ -443,19 +443,19 @@ def render_bottom_footer(repo_instance, analytics_instance, key_prefix: str = "m
             show_data_privacy_dialog()
 
 # Specialized Module View Routing
-if st.session_state.get("active_nav_module") == "🧪 Portfolio Stress Testing Lab":
+if st.session_state.get("active_nav_module") == "Portfolio Stress Testing Lab":
     render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot)
     render_bottom_footer(repo, analytics, key_prefix="mod1")
     st.stop()
-elif st.session_state.get("active_nav_module") == "💬 Trigger-to-Conversation Engine":
+elif st.session_state.get("active_nav_module") == "Trigger-to-Conversation Engine":
     render_trigger_conversation_engine(repo, analytics, llm_engine, selected_snapshot)
     render_bottom_footer(repo, analytics, key_prefix="mod2")
     st.stop()
-elif st.session_state.get("active_nav_module") == "👤 Client Digital Twin":
+elif st.session_state.get("active_nav_module") == "Client Digital Twin":
     render_client_digital_twin(repo, analytics, llm_engine, selected_snapshot)
     render_bottom_footer(repo, analytics, key_prefix="mod3")
     st.stop()
-elif st.session_state.get("active_nav_module") == "🔍 Explainable AI":
+elif st.session_state.get("active_nav_module") == "Explainable AI":
     render_explainable_ai(repo, analytics, llm_engine, selected_snapshot)
     render_bottom_footer(repo, analytics, key_prefix="mod4")
     st.stop()
@@ -536,16 +536,16 @@ total_liq_crushes = sum(1 for b in filtered_book if b["has_liq_alert"])
 # ---------------------------------------------------------
 # INTERACTIVE MODAL DIALOGS (CLICKABLE KPI DEEP-DIVES)
 # ---------------------------------------------------------
-@st.dialog("⚖️ Book-Wide Mandate Breaches & Rebalancing Roster", width="large")
+@st.dialog("Book-Wide Mandate Breaches & Rebalancing Roster", width="large")
 def show_breaches_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
-    st.markdown(f"### ⚖️ All Mandate Breaches & Rebalancing Actions ({snapshot_date})")
+    st.markdown(f"### All Mandate Breaches & Rebalancing Actions ({snapshot_date})")
     st.caption("Consolidated deterministic view of all asset class drift and single-issuer concentration breaches across all client sleeves.")
     
     all_breaches = analytics.get_all_book_breaches(snapshot_date)
     if scope_cids:
         all_breaches = [b for b in all_breaches if b["client_id"] in scope_cids]
     if not all_breaches:
-        st.success("✅ No mandate or concentration breaches detected across the entire book.")
+        st.success("No mandate or concentration breaches detected across the entire book.")
         return
 
     # Metrics summary
@@ -592,23 +592,23 @@ def show_breaches_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         )
     with pick_col2:
         st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
-        if st.button("🚀 Open Dossier", key="btn_jump_from_breach_dialog", use_container_width=True):
+        if st.button("Open Dossier", key="btn_jump_from_breach_dialog", use_container_width=True):
             st.session_state.selected_client_id = sel_client_to_jump.split(" — ")[0]
             st.session_state.jump_to_tab = 1
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
 
-@st.dialog("🚨 Credit Facilities & Lombard Margin Call Alerts", width="large")
+@st.dialog("Credit Facilities & Lombard Margin Call Alerts", width="large")
 def show_ltv_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
-    st.markdown(f"### 🚨 Credit Facilities & Margin Call Trajectory ({snapshot_date})")
+    st.markdown(f"### Credit Facilities & Margin Call Trajectory ({snapshot_date})")
     st.caption("Active Lombard loans, collateral market values, lending values, and margin call headroom buffer.")
     
     all_alerts = analytics.get_all_book_ltv_alerts(snapshot_date)
     if scope_cids:
         all_alerts = [a for a in all_alerts if a["client_id"] in scope_cids]
     if not all_alerts:
-        st.success("✅ All credit facilities within safe LTV parameters (>5% headroom buffer).")
+        st.success("All credit facilities within safe LTV parameters (>5% headroom buffer).")
         return
 
     st.markdown("---")
@@ -641,23 +641,23 @@ def show_ltv_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         )
     with ltv_pick_col2:
         st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
-        if st.button("🚀 Open Dossier", key="btn_jump_from_ltv_dialog", use_container_width=True):
+        if st.button("Open Dossier", key="btn_jump_from_ltv_dialog", use_container_width=True):
             st.session_state.selected_client_id = sel_ltv_client.split(" — ")[0]
             st.session_state.jump_to_tab = 1
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
 
-@st.dialog("💧 Book-Wide Liquidity Runway & Commitment Deficits", width="large")
+@st.dialog("Book-Wide Liquidity Runway & Commitment Deficits", width="large")
 def show_liquidity_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
-    st.markdown(f"### 💧 Liquidity Runway & Private Market Deficits ({snapshot_date})")
+    st.markdown(f"### Liquidity Runway & Private Market Deficits ({snapshot_date})")
     st.caption("Whole-book audit of uncalled private equity commitments, planned milestone cash needs, and liquid cash reserve buffers.")
 
     all_deficits = analytics.get_all_book_liquidity_deficits(snapshot_date)
     if scope_cids:
         all_deficits = [d for d in all_deficits if d["client_id"] in scope_cids]
     if not all_deficits:
-        st.success("✅ All clients have adequate liquid reserves to cover commitments and milestone cash needs.")
+        st.success("All clients have adequate liquid reserves to cover commitments and milestone cash needs.")
         return
 
     # Aggregate metrics
@@ -703,7 +703,7 @@ def show_liquidity_dialog(snapshot_date: str, scope_cids: Optional[set] = None):
         )
     with liq_pick_col2:
         st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
-        if st.button("🚀 Open Dossier", key="btn_jump_from_liq_dialog", use_container_width=True):
+        if st.button("Open Dossier", key="btn_jump_from_liq_dialog", use_container_width=True):
             st.session_state.selected_client_id = sel_liq_client.split(" — ")[0]
             st.session_state.jump_to_tab = 1
             st.rerun()
@@ -741,7 +741,7 @@ with kpi_c3:
         <div class="jb-kpi-sub">Across {total_breach_pfs} Pfs ({total_breach_clients} Clients)</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button(f"🔍 View {total_breach_items} Breach(es)", key="btn_kpi_breaches", use_container_width=True):
+    if st.button(f"View {total_breach_items} Breach(es)", key="btn_kpi_breaches", use_container_width=True):
         show_breaches_dialog(selected_snapshot, filtered_cids)
 
 with kpi_c4:
@@ -752,7 +752,7 @@ with kpi_c4:
         <div class="jb-kpi-sub">Margin Call Proximity Alerts</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button(f"🔍 View {total_ltv_alerts} Credit Alert(s)", key="btn_kpi_ltv", use_container_width=True):
+    if st.button(f"View {total_ltv_alerts} Credit Alert(s)", key="btn_kpi_ltv", use_container_width=True):
         show_ltv_dialog(selected_snapshot, filtered_cids)
 
 with kpi_c5:
@@ -763,7 +763,7 @@ with kpi_c5:
         <div class="jb-kpi-sub">Capital Call & Cash Milestones</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button(f"🔍 View {total_liq_crushes} Liquidity Alert(s) ({scope_label})", key="btn_kpi_liq", use_container_width=True):
+    if st.button(f"View {total_liq_crushes} Liquidity Alert(s) ({scope_label})", key="btn_kpi_liq", use_container_width=True):
         show_liquidity_dialog(selected_snapshot, filtered_cids)
 
 
@@ -771,11 +771,11 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # Main Application Tabs
 tab_queue, tab_client360, tab_actions, tab_pack, tab_vector = st.tabs([
-    "📋 Morning Call Queue",
-    "👤 Client 360",
-    "⚡ Agent Action Deck",
-    "📄 Client Meeting Pack",
-    "🧠 Semantic Navigator"
+    "Morning Call Queue",
+    "Client 360",
+    "Agent Action Deck",
+    "Client Meeting Pack",
+    "Semantic Navigator"
 ])
 
 tab_target_index = st.session_state.pop("jump_to_tab", None)
@@ -810,13 +810,13 @@ if tab_target_index is not None:
 # TAB 1: MORNING CALL QUEUE (BOOK PRIORITIZATION)
 # ---------------------------------------------------------
 with tab_queue:
-    st.markdown("### 📋 Prioritized Morning Action Queue — Who to Call First")
+    st.markdown("### Prioritized Morning Action Queue — Who to Call First")
     st.caption("Ranked autonomously by composite risk urgency (Mandate breaches, Lombard margin call proximity, uncalled commitment coverage, and life milestones).")
 
     # Search & Quick Filters
     q_col1, q_col2 = st.columns([3, 2])
     with q_col1:
-        search_query = st.text_input("🔍 Filter by Client Name, ID, or Wealth Band", placeholder="e.g. Hartono, CL-0002, Ultra HNW")
+        search_query = st.text_input("Filter by Client Name, ID, or Wealth Band", placeholder="e.g. Hartono, CL-0002, Ultra HNW")
     with q_col2:
         urgency_filter = st.selectbox(
             "Filter Queue by Status",
@@ -867,7 +867,7 @@ with tab_queue:
         domicile = html.escape(str(item.get("tax_domicile", "")))
         last_contact_date = item.get("last_meeting_date")
         last_contact_channel = item.get("last_meeting_channel")
-        last_contact_html = f"📅 Last Contact: <strong style='color: #C5A880;'>{last_contact_date} ({last_contact_channel})</strong>" if last_contact_date else "📅 Last Contact: <span style='color: #94A3B8;'>Initial Onboarding</span>"
+        last_contact_html = f"Last Contact: <strong style='color: #C5A880;'>{last_contact_date} ({last_contact_channel})</strong>" if last_contact_date else "Last Contact: <span style='color: #94A3B8;'>Initial Onboarding</span>"
 
         # Card container
         with st.container():
@@ -882,27 +882,27 @@ with tab_queue:
             with col_info:
                 badge_html = ""
                 if item["has_ltv_alert"]:
-                    badge_html += '<span class="jb-badge jb-badge-high" style="margin-right: 4px;">🚨 LTV Margin Risk</span>'
+                    badge_html += '<span class="jb-badge jb-badge-high" style="margin-right: 4px;">LTV Margin Risk</span>'
                 if item["has_drift_alert"]:
-                    badge_html += '<span class="jb-badge jb-badge-medium" style="margin-right: 4px;">⚖️ Mandate Drift</span>'
+                    badge_html += '<span class="jb-badge jb-badge-medium" style="margin-right: 4px;">Mandate Drift</span>'
                 if item["has_liq_alert"]:
-                    badge_html += '<span class="jb-badge jb-badge-medium" style="margin-right: 4px;">💧 Liquidity Crunch</span>'
+                    badge_html += '<span class="jb-badge jb-badge-medium" style="margin-right: 4px;">Liquidity Crunch</span>'
                 if item.get("comingling_count", 0) > 0:
-                    badge_html += f'<span class="jb-badge jb-badge-fact" style="margin-right: 4px;">✨ {item["comingling_count"]} Synergistic Package</span>'
+                    badge_html += f'<span class="jb-badge jb-badge-fact" style="margin-right: 4px;">{item["comingling_count"]} Synergistic Package</span>'
                 if conflicts > 0:
-                    badge_html += f'<span class="jb-badge jb-badge-rule" style="margin-right: 4px;">⚡ {conflicts} Conflict Tradeoff</span>'
+                    badge_html += f'<span class="jb-badge jb-badge-rule" style="margin-right: 4px;">{conflicts} Conflict Tradeoff</span>'
 
                 c_ret_info = analytics.compute_portfolio_returns(item["client_id"], selected_snapshot)
                 c_ret_pct = c_ret_info["cumulative_return_pct"]
                 c_ret_sign = "+" if c_ret_pct > 0 else ""
                 c_ret_color = "#55EFC4" if c_ret_pct >= 0 else "#FF7675"
 
-                info_html = f"""<div><div style="display: flex; align-items: center; gap: 0.75rem;"><span style="font-size: 1.15rem; font-weight: 700; color: #FFFFFF;">{cname}</span><span style="font-size: 0.8rem; color: #C5A880; font-family: monospace;">{cid}</span>{badge_html}</div><div style="font-size: 0.85rem; color: #94A3B8; margin-top: 0.2rem;">AUM: <strong style="color: #FFFFFF;">${aum/1e6:,.2f}M</strong> | Return (YTD): <strong style="color: {c_ret_color};">{c_ret_sign}{c_ret_pct:.2f}%</strong> | Risk: <strong style="color: #FFFFFF;">{risk}</strong> | {last_contact_html} | Desk: {desk} | Domicile: {domicile}</div><div style="font-size: 0.9rem; color: #E2E8F0; margin-top: 0.4rem; padding-left: 0.5rem; border-left: 2px solid #C5A880;">💡 <strong>Priority Action:</strong> {headline}</div></div>"""
+                info_html = f"""<div><div style="display: flex; align-items: center; gap: 0.75rem;"><span style="font-size: 1.15rem; font-weight: 700; color: #FFFFFF;">{cname}</span><span style="font-size: 0.8rem; color: #C5A880; font-family: monospace;">{cid}</span>{badge_html}</div><div style="font-size: 0.85rem; color: #94A3B8; margin-top: 0.2rem;">AUM: <strong style="color: #FFFFFF;">${aum/1e6:,.2f}M</strong> | Return (YTD): <strong style="color: {c_ret_color};">{c_ret_sign}{c_ret_pct:.2f}%</strong> | Risk: <strong style="color: #FFFFFF;">{risk}</strong> | {last_contact_html} | Desk: {desk} | Domicile: {domicile}</div><div style="font-size: 0.9rem; color: #E2E8F0; margin-top: 0.4rem; padding-left: 0.5rem; border-left: 2px solid #C5A880;"><strong>Priority Action:</strong> {headline}</div></div>"""
                 st.markdown(info_html, unsafe_allow_html=True)
 
             with col_action:
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.button(f"🔍 Open Dossier", key=f"btn_open_{cid}", use_container_width=True):
+                if st.button(f"Open Dossier", key=f"btn_open_{cid}", use_container_width=True):
                     st.session_state.selected_client_id = item["client_id"]
                     st.session_state.jump_to_tab = 1
                     st.rerun()
@@ -922,22 +922,22 @@ with tab_client360:
             age_val = client.get("age")
             if pd.notna(age_val) and str(age_val).strip() != "":
                 try:
-                    age_str = f"🎂 Age: <strong style='color: #FFF;'>{int(float(age_val))}</strong> ({client.get('life_stage', 'N/A')})"
+                    age_str = f"Age: <strong style='color: #FFF;'>{int(float(age_val))}</strong> ({client.get('life_stage', 'N/A')})"
                 except (ValueError, TypeError):
-                    age_str = f"🏛️ Entity: <strong style='color: #FFF;'>{client.get('life_stage', 'Institutional')}</strong>"
+                    age_str = f"Entity: <strong style='color: #FFF;'>{client.get('life_stage', 'Institutional')}</strong>"
             else:
-                age_str = f"🏛️ Entity: <strong style='color: #FFF;'>{client.get('life_stage', 'Family Office')}</strong>"
+                age_str = f"Entity: <strong style='color: #FFF;'>{client.get('life_stage', 'Family Office')}</strong>"
 
             disp_client_name = format_client_display_name(client['client_name'], target_cid)
-            st.markdown(f"## 👤 {disp_client_name} ({target_cid})")
+            st.markdown(f"## {disp_client_name} ({target_cid})")
             st.markdown(f"""
             <div style="display: flex; gap: 0.85rem; flex-wrap: wrap; font-size: 0.85rem; color: #94A3B8;">
                 <div>{age_str}</div>
-                <div>📍 Domicile: <strong style="color: #FFF;">{client.get('tax_domicile', 'N/A')}</strong></div>
-                <div>⚖️ Risk: <strong style="color: #FFF;">{client.get('risk_profile', 'N/A')} ({client.get('risk_tolerance_score', 'N/A')}/100)</strong></div>
-                <div>💼 Wealth Band: <strong style="color: #C5A880;">{client.get('wealth_band', 'N/A')}</strong></div>
-                <div>🗣️ Language: <strong style="color: #FFF;">{client.get('reporting_language', 'English')}</strong></div>
-                <div>🏷️ KYC Status: <strong style="color: #FFF;">{client.get('kyc_review_due', 'N/A')}</strong></div>
+                <div>Domicile: <strong style="color: #FFF;">{client.get('tax_domicile', 'N/A')}</strong></div>
+                <div>Risk: <strong style="color: #FFF;">{client.get('risk_profile', 'N/A')} ({client.get('risk_tolerance_score', 'N/A')}/100)</strong></div>
+                <div>Wealth Band: <strong style="color: #C5A880;">{client.get('wealth_band', 'N/A')}</strong></div>
+                <div>Language: <strong style="color: #FFF;">{client.get('reporting_language', 'English')}</strong></div>
+                <div>KYC Status: <strong style="color: #FFF;">{client.get('kyc_review_due', 'N/A')}</strong></div>
             </div>
             """, unsafe_allow_html=True)
         with c360_header_c2:
@@ -978,7 +978,7 @@ with tab_client360:
 
         # Multi-Portfolio Switcher (Crucial Trap §1.1 Solution)
         portfolios = repo.get_portfolios_for_client(target_cid)
-        st.markdown(f"### 📂 Multi-Portfolio Entity Graph ({len(portfolios)} Portfolios)")
+        st.markdown(f"### Multi-Portfolio Entity Graph ({len(portfolios)} Portfolios)")
         
         pf_options = {f"{p['portfolio_id']} — {p['portfolio_name']} ({p['mandate_code']})": p['portfolio_id'] for p in portfolios}
         selected_pf_label = st.selectbox("Select Portfolio Sleeve for Deep-Dive", options=list(pf_options.keys()))
@@ -994,16 +994,16 @@ with tab_client360:
 
         st.markdown(f"""
         <div style="background: rgba(19, 42, 74, 0.6); border: 1px solid rgba(197, 160, 89, 0.2); border-radius: 6px; padding: 0.45rem 0.85rem; font-size: 0.82rem; margin-bottom: 0.75rem; display: flex; gap: 1.25rem; flex-wrap: wrap;">
-            <span>💼 Sleeve AUM ({selected_snapshot}): <strong style="color: #FFF;">${pf_ret['current_aum_usd']/1e6:,.2f}M</strong></span>
-            <span>📈 YTD Performance: <strong style="color: {s_ret_color};">{s_ret_sign}{sleeve_cum_pct:.2f}%</strong> ({s_ret_sign}${pf_ret['cumulative_return_usd']/1e6:,.2f}M)</span>
-            <span>⏱️ Period Move ({pf_ret['period_label']}): <strong style="color: {s_p_color};">{s_p_sign}{sleeve_per_pct:.2f}%</strong> ({s_p_sign}${pf_ret['period_return_usd']/1e6:,.2f}M)</span>
+            <span>Sleeve AUM ({selected_snapshot}): <strong style="color: #FFF;">${pf_ret['current_aum_usd']/1e6:,.2f}M</strong></span>
+            <span>YTD Performance: <strong style="color: {s_ret_color};">{s_ret_sign}{sleeve_cum_pct:.2f}%</strong> ({s_ret_sign}${pf_ret['cumulative_return_usd']/1e6:,.2f}M)</span>
+            <span>Period Move ({pf_ret['period_label']}): <strong style="color: {s_p_color};">{s_p_sign}{sleeve_per_pct:.2f}%</strong> ({s_p_sign}${pf_ret['period_return_usd']/1e6:,.2f}M)</span>
         </div>
         """, unsafe_allow_html=True)
 
         col_left, col_right = st.columns([1, 1])
 
         with col_left:
-            st.markdown("#### ⚖️ Asset Allocation vs Mandate Bands (Deterministic)")
+            st.markdown("#### Asset Allocation vs Mandate Bands (Deterministic)")
             drift_data = analytics.compute_drift(selected_pf_id, selected_snapshot)
             
             if "allocations" in drift_data and drift_data["allocations"]:
@@ -1027,14 +1027,14 @@ with tab_client360:
                 
                 if drift_data.get("has_breaches"):
                     for b in drift_data["breaches"]:
-                        st.error(f"🚨 **Breach Alert:** {b['asset_class']} is {b['actual_pct']:.2f}% (Limit {b.get('band_max_pct', b.get('band_min_pct'))}%).")
+                        st.error(f"**Breach Alert:** {b['asset_class']} is {b['actual_pct']:.2f}% (Limit {b.get('band_max_pct', b.get('band_min_pct'))}%).")
 
                 if drift_data.get("has_warnings"):
                     for w in drift_data["warnings"]:
-                        st.warning(f"⚠️ **Warning:** {w['asset_class']} is {w['actual_pct']:.2f}% (At Mandate Limit {w.get('band_min_pct', w.get('band_max_pct'))}%).")
+                        st.warning(f"**Warning:** {w['asset_class']} is {w['actual_pct']:.2f}% (At Mandate Limit {w.get('band_min_pct', w.get('band_max_pct'))}%).")
 
         with col_right:
-            st.markdown("#### 🔬 Structured Product Look-Through Exposure")
+            st.markdown("#### Structured Product Look-Through Exposure")
             st.caption("Deconstructs derivatives/accumulators into underlying asset exposures.")
             conc_data = analytics.compute_concentration(selected_pf_id, selected_snapshot)
             
@@ -1059,7 +1059,7 @@ with tab_client360:
         c_sub1, c_sub2, c_sub3 = st.columns(3)
         
         with c_sub1:
-            st.markdown("#### 💳 Credit Facility & LTV")
+            st.markdown("#### Credit Facility & LTV")
             ltv_data = analytics.compute_ltv(target_cid, selected_snapshot)
             if ltv_data["has_facility"]:
                 for fac in ltv_data["facilities"]:
@@ -1076,12 +1076,12 @@ with tab_client360:
                     )
                     st.caption(f"Available Headroom: **${headroom:,.0f} {fac['facility_ccy']}**")
                     if is_warn:
-                        st.warning("⚠️ Approaching covenant trigger threshold.")
+                        st.warning("Approaching covenant trigger threshold.")
             else:
                 st.info("No active credit facilities for this client.")
 
         with c_sub2:
-            st.markdown("#### 💧 Liquidity Runway & Commitments")
+            st.markdown("#### Liquidity Runway & Commitments")
             runway = analytics.compute_liquidity_runway(target_cid, selected_snapshot)
             st.metric(
                 label="Liquidity Coverage Ratio",
@@ -1093,27 +1093,27 @@ with tab_client360:
             st.caption(f"Planned Cash Needs: **${runway['planned_cash_needs_usd']:,.0f}**")
 
         with c_sub3:
-            st.markdown(f"#### 📜 Standing RM Notes (As of {selected_snapshot})")
+            st.markdown(f"#### Standing RM Notes (As of {selected_snapshot})")
             notes_info = analytics.get_rm_notes(target_cid, as_of_date=selected_snapshot)
             if notes_info["has_notes"]:
                 shown_ids = set()
                 for ov in notes_info.get("standing_overrides", []):
                     shown_ids.add(ov.get("note_id"))
-                    st.warning(f"🔒 **Standing Constraint ({ov['date']}):** {ov['summary']}")
+                    st.warning(f"**Standing Constraint ({ov['date']}):** {ov['summary']}")
                 for pref in notes_info.get("preferences", []):
                     shown_ids.add(pref.get("note_id"))
-                    st.info(f"💡 **Preference ({pref['date']}):** {pref['summary']}")
+                    st.info(f"**Preference ({pref['date']}):** {pref['summary']}")
                 for n in notes_info.get("notes", []):
                     if n.get("note_id") not in shown_ids:
                         st.markdown(f"""
                         <div style="background: rgba(255,255,255,0.04); border-left: 3px solid #C5A880; border-radius: 4px; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; font-size: 0.84rem; color: #E2E8F0;">
-                            📝 <strong>RM Note ({n.get('note_date', '')} via {n.get('channel', 'Meeting')}):</strong> {html.escape(n.get('note', ''))}
+                            <strong>RM Note ({n.get('note_date', '')} via {n.get('channel', 'Meeting')}):</strong> {html.escape(n.get('note', ''))}
                         </div>
                         """, unsafe_allow_html=True)
             else:
                 st.info(f"No qualitative overrides on record as of {selected_snapshot}.")
                 if notes_info.get("future_notes_count"):
-                    st.caption(f"ℹ️ {notes_info['future_notes_count']} subsequent note(s) recorded after {selected_snapshot}.")
+                    st.caption(f"{notes_info['future_notes_count']} subsequent note(s) recorded after {selected_snapshot}.")
 
 # ---------------------------------------------------------
 # TAB 3: AGENT ACTION DECK (RM IN CONTROL)
@@ -1121,7 +1121,7 @@ with tab_client360:
 with tab_actions:
     act_top_c1, act_top_c2 = st.columns([3, 1.5])
     with act_top_c1:
-        st.markdown(f"### ⚡ Intelligent Action Deck — Relationship Manager in Control")
+        st.markdown(f"### Intelligent Action Deck — Relationship Manager in Control")
         st.caption("Specialist agents analyze deterministic facts to draft client-ready actions. Nothing reaches the client without your approval.")
     with act_top_c2:
         render_client_switcher("tab3")
@@ -1140,14 +1140,14 @@ with tab_actions:
         st.markdown(f"""
         <div style="background: rgba(197, 168, 128, 0.12); border: 1.5px solid rgba(197, 168, 128, 0.45); border-radius: 8px; padding: 0.9rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
             <div>
-                <div style="font-size: 0.95rem; font-weight: 700; color: #C5A880;">🔍 Supervisory Desk Head Audit Mode (Read-Only Review)</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: #C5A880;">Supervisory Desk Head Audit Mode (Read-Only Review)</div>
                 <div style="font-size: 0.82rem; color: #E2E8F0; margin-top: 0.25rem; line-height: 1.4;">
                     You are authenticated with supervisory oversight credentials (<strong>{st.session_state.logged_in_user} • {st.session_state.logged_in_rm_id}</strong>).<br>
                     Under Julius Baer Compliance Policy #PB-AUD-101, commercial action approval, trade sign-off, and talking point phrasing are reserved exclusively for the assigned Relationship Manager (<strong>Priscilla Ong</strong>).
                 </div>
             </div>
             <div style="margin-left: 1rem;">
-                <span class="jb-badge jb-badge-fact" style="font-size: 0.78rem; padding: 0.4rem 0.8rem; white-space: nowrap;">🔒 Read-Only Audit</span>
+                <span class="jb-badge jb-badge-fact" style="font-size: 0.78rem; padding: 0.4rem 0.8rem; white-space: nowrap;">Read-Only Audit</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1156,9 +1156,9 @@ with tab_actions:
     if compliance_flags:
         for flag in compliance_flags:
             if flag["severity"] == "high":
-                st.error(f"🛡️ **Compliance Alert ({flag['type']}):** {flag['message']}")
+                st.error(f"**Compliance Alert ({flag['type']}):** {flag['message']}")
             else:
-                st.warning(f"🛡️ **Suitability Notice ({flag['type']}):** {flag['message']}")
+                st.warning(f"**Suitability Notice ({flag['type']}):** {flag['message']}")
 
     # ---------------------------------------------------------
     # SCORE PROVENANCE (OPTION A) & PROJECTED SCORE (OPTION C)
@@ -1206,17 +1206,17 @@ with tab_actions:
     score_delta = round(raw_urgency_score - projected_score, 1)
     
     # Factor Badges HTML (Option A)
-    factor_badges = [f'<span class="jb-badge" style="background: rgba(255,255,255,0.08); color: #E2E8F0; margin-right: 4px; margin-bottom: 4px;">🏛️ Base: +{base_pts:.0f}</span>']
+    factor_badges = [f'<span class="jb-badge" style="background: rgba(255,255,255,0.08); color: #E2E8F0; margin-right: 4px; margin-bottom: 4px;">Base: +{base_pts:.0f}</span>']
     if cred_pts > 0:
-        factor_badges.append(f'<span class="jb-badge jb-badge-high" style="margin-right: 4px; margin-bottom: 4px;">🚨 Credit LTV Alert: +{cred_pts:.0f}</span>')
+        factor_badges.append(f'<span class="jb-badge jb-badge-high" style="margin-right: 4px; margin-bottom: 4px;">Credit LTV Alert: +{cred_pts:.0f}</span>')
     if liq_pts > 0:
-        factor_badges.append(f'<span class="jb-badge jb-badge-medium" style="margin-right: 4px; margin-bottom: 4px;">💧 Liquidity Deficit: +{liq_pts:.0f}</span>')
+        factor_badges.append(f'<span class="jb-badge jb-badge-medium" style="margin-right: 4px; margin-bottom: 4px;">Liquidity Deficit: +{liq_pts:.0f}</span>')
     if mand_pts > 0:
         breaches_n = urgency_breakdown.get("mandate_breaches_count", 1)
-        factor_badges.append(f'<span class="jb-badge jb-badge-rule" style="margin-right: 4px; margin-bottom: 4px;">⚖️ Mandate Drift: +{mand_pts:.0f} ({breaches_n} breach{"es" if breaches_n > 1 else ""})</span>')
+        factor_badges.append(f'<span class="jb-badge jb-badge-rule" style="margin-right: 4px; margin-bottom: 4px;">Mandate Drift: +{mand_pts:.0f} ({breaches_n} breach{"es" if breaches_n > 1 else ""})</span>')
     if high_pts > 0:
         high_n = urgency_breakdown.get("high_actions_count", 1)
-        factor_badges.append(f'<span class="jb-badge jb-badge-fact" style="margin-right: 4px; margin-bottom: 4px;">⚡ High Actions: +{high_pts:.0f} ({high_n} rec{"s" if high_n > 1 else ""})</span>')
+        factor_badges.append(f'<span class="jb-badge jb-badge-fact" style="margin-right: 4px; margin-bottom: 4px;">High Actions: +{high_pts:.0f} ({high_n} rec{"s" if high_n > 1 else ""})</span>')
     factor_badges_html = "".join(factor_badges)
     
     # Urgency labels & badge styling
@@ -1230,24 +1230,24 @@ with tab_actions:
     if score_delta > 0:
         risk_reduction_pct = (score_delta / max(1.0, raw_urgency_score - base_pts)) * 100.0 if (raw_urgency_score - base_pts) > 0 else 100.0
         proj_status_html = f'<div style="font-size: 1.15rem; font-weight: 700; color: #2ECC71;">↓ {score_delta:.0f} pts Risk Mitigated ({risk_reduction_pct:.0f}% Resolved)</div>'
-        proj_explanation = '<div style="font-size: 0.82rem; color: #55EFC4; margin-top: 0.3rem;">✓ Approved actions will de-risk margin call headroom, eliminate mandate drift, and restore cash runway upon RM sign-off.</div>'
+        proj_explanation = '<div style="font-size: 0.82rem; color: #55EFC4; margin-top: 0.3rem;">Approved actions will de-risk margin call headroom, eliminate mandate drift, and restore cash runway upon RM sign-off.</div>'
     else:
-        proj_status_html = '<div style="font-size: 0.95rem; font-weight: 600; color: #FDCB6E;">⏳ 0 Actions Approved (Pending RM Sign-Off)</div>'
+        proj_status_html = '<div style="font-size: 0.95rem; font-weight: 600; color: #FDCB6E;">0 Actions Approved (Pending RM Sign-Off)</div>'
         proj_explanation = '<div style="font-size: 0.82rem; color: #94A3B8; margin-top: 0.3rem;">Approve recommended specialist actions below to simulate post-execution risk resolution and track projected score drop.</div>'
 
     last_meeting_date = client_result["client_context"].get("last_meeting_date")
     last_meeting_channel = client_result["client_context"].get("last_meeting_channel")
-    temporal_str = f"📅 Last Contact: {last_meeting_date} ({last_meeting_channel}) • ⏱️ Horizon: Post-{last_meeting_date} to {selected_snapshot}" if last_meeting_date else f"📅 Initial Onboarding • ⏱️ Snapshot {selected_snapshot}"
+    temporal_str = f"Last Contact: {last_meeting_date} ({last_meeting_channel}) • Horizon: Post-{last_meeting_date} to {selected_snapshot}" if last_meeting_date else f"Initial Onboarding • Snapshot {selected_snapshot}"
 
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, rgba(8,20,38,0.95) 0%, rgba(13,30,54,0.95) 100%); border: 1.5px solid rgba(197,168,128,0.35); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
         <div style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.65rem; margin-bottom: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
                 <div style="font-size: 1.06rem; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 0.5rem;">
-                    <span>🎯 Morning Call Urgency Provenance & Risk Mitigation Simulator</span>
+                    <span>Morning Call Urgency Provenance & Risk Mitigation Simulator</span>
                 </div>
                 <div>
-                    <span class="jb-badge jb-badge-rule" style="font-size: 0.85rem; padding: 0.35rem 0.9rem; border: 1.5px solid #C5A880; font-weight: 700; background: rgba(197,168,128,0.15); color: #FFF;">🏆 Rank #{rank_in_book} of {total_in_book} in Queue</span>
+                    <span class="jb-badge jb-badge-rule" style="font-size: 0.85rem; padding: 0.35rem 0.9rem; border: 1.5px solid #C5A880; font-weight: 700; background: rgba(197,168,128,0.15); color: #FFF;">Rank #{rank_in_book} of {total_in_book} in Queue</span>
                 </div>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #C5A880; font-family: monospace;">
@@ -1282,7 +1282,7 @@ with tab_actions:
 
     # Comingling Opportunities (Synergistic Multi-Action Clubbing)
     if comingling_opportunities:
-        st.markdown("#### ✨ Synergistic Comingling Opportunity (Clubbed Multi-Agent Strategy)")
+        st.markdown("#### Synergistic Comingling Opportunity (Clubbed Multi-Agent Strategy)")
         for pkg in comingling_opportunities:
             pkg_id = pkg["id"]
             pkg_title = html.escape(str(pkg["title"]))
@@ -1296,16 +1296,16 @@ with tab_actions:
             is_pkg_approved = all(st.session_state.approved_actions.get(rid, False) for rid in clubbed_rec_ids) or st.session_state.approved_actions.get(pkg_id, False)
             pkg_border = "#2ECC71" if is_pkg_approved else "#C5A880"
             pkg_horizon = pkg.get("time_horizon")
-            pkg_horizon_badge = f'<span class="jb-badge" style="background: rgba(197, 168, 128, 0.2); border: 1px solid rgba(197, 168, 128, 0.4); color: #F5E6CC; font-weight: 600;">⏱️ Horizon: {html.escape(str(pkg_horizon))}</span>' if pkg_horizon else ""
+            pkg_horizon_badge = f'<span class="jb-badge" style="background: rgba(197, 168, 128, 0.2); border: 1px solid rgba(197, 168, 128, 0.4); color: #F5E6CC; font-weight: 600;">Horizon: {html.escape(str(pkg_horizon))}</span>' if pkg_horizon else ""
             conflicts_reconciled = pkg.get("conflicts_reconciled", [])
-            pkg_conf_badge = f'<span class="jb-badge" style="background: rgba(253, 203, 110, 0.2); border: 1px solid rgba(253, 203, 110, 0.4); color: #FDCB6E; font-weight: 600;">⚖️ {len(conflicts_reconciled)} Conflict Reconciled</span>' if conflicts_reconciled else ""
+            pkg_conf_badge = f'<span class="jb-badge" style="background: rgba(253, 203, 110, 0.2); border: 1px solid rgba(253, 203, 110, 0.4); color: #FDCB6E; font-weight: 600;">{len(conflicts_reconciled)} Conflict Reconciled</span>' if conflicts_reconciled else ""
 
             with st.container():
                 st.markdown(f"""
                 <div class="jb-rec-card" style="border: 1.5px solid {pkg_border}; background: linear-gradient(135deg, rgba(197,168,128,0.12) 0%, rgba(13,30,54,0.7) 100%); border-radius: 8px; padding: 1.25rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
                         <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
-                            <span class="jb-badge jb-badge-fact">✨ Multi-Agent Synergy</span>
+                            <span class="jb-badge jb-badge-fact">Multi-Agent Synergy</span>
                             <span class="jb-badge jb-badge-high">{len(clubbed_recs)} Actions Clubbed</span>
                             {pkg_horizon_badge}
                             {pkg_conf_badge}
@@ -1316,13 +1316,13 @@ with tab_actions:
                     <div style="font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.4rem;">{pkg_title}</div>
                     <div style="font-size: 0.92rem; color: #E2E8F0; margin-bottom: 0.8rem;">{pkg_summary}</div>
                     <div style="background: rgba(8,20,38,0.6); padding: 0.8rem; border-radius: 6px; margin-bottom: 0.8rem;">
-                        <div style="font-size: 0.85rem; font-weight: 600; color: #C5A880; margin-bottom: 0.3rem;">🎯 Unified Multi-Objective Execution Plan:</div>
+                        <div style="font-size: 0.85rem; font-weight: 600; color: #C5A880; margin-bottom: 0.3rem;">Unified Multi-Objective Execution Plan:</div>
                         <div style="font-size: 0.85rem; color: #FFFFFF; white-space: pre-line;">{pkg_unified_action}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
 
-                with st.expander(f"📦 View {len(clubbed_recs)} Clubbed Specialist Components & Strategic Benefits"):
+                with st.expander(f"View {len(clubbed_recs)} Clubbed Specialist Components & Strategic Benefits"):
                     for cr in clubbed_recs:
                         st.markdown(f"- **[{cr['agent'].upper()}]** {cr['headline']}")
                     st.markdown("<br><strong>Financial Benefits:</strong>", unsafe_allow_html=True)
@@ -1331,7 +1331,7 @@ with tab_actions:
 
                 curr_pkg_tp = st.session_state.custom_talking_points.get(pkg_id, pkg_unified_tp)
                 edited_pkg_tp = st.text_area(
-                    "💬 Unified Client-Ready Advisory Phrasing (Verbatim for RM)" + (" [Read-Only in Supervisory Audit Mode]" if is_read_only else ""),
+                    "Unified Client-Ready Advisory Phrasing (Verbatim for RM)" + (" [Read-Only in Supervisory Audit Mode]" if is_read_only else ""),
                     value=curr_pkg_tp,
                     key=f"tp_pkg_{pkg_id}",
                     height=80,
@@ -1343,20 +1343,20 @@ with tab_actions:
                 if is_read_only:
                     st.markdown(f"""
                     <div style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(197,168,128,0.35); border-radius: 6px; padding: 0.65rem 0.9rem; font-size: 0.83rem; color: #94A3B8;">
-                        🔒 <strong>Approval Locked:</strong> Supervisory Desk Head ({st.session_state.logged_in_user}) has read-only oversight privileges. Action approval and commercial trade sign-off require assigned RM (Priscilla Ong) credentials.
+                        <strong>Approval Locked:</strong> Supervisory Desk Head ({st.session_state.logged_in_user}) has read-only oversight privileges. Action approval and commercial trade sign-off require assigned RM (Priscilla Ong) credentials.
                     </div>
                     """, unsafe_allow_html=True)
                 else:
                     col_pkg1, col_pkg2, col_pkg3 = st.columns([3, 2, 4])
                     with col_pkg1:
-                        if st.button("⚡ Approve Unified Package (1-Click)", key=f"btn_app_pkg_{pkg_id}", use_container_width=True):
+                        if st.button("Approve Unified Package (1-Click)", key=f"btn_app_pkg_{pkg_id}", use_container_width=True):
                             for rid in clubbed_rec_ids:
                                 st.session_state.approved_actions[rid] = True
                                 st.session_state.dismissed_actions[rid] = False
                             st.session_state.approved_actions[pkg_id] = True
                             st.rerun()
                     with col_pkg2:
-                        if st.button("❌ Dismiss Package", key=f"btn_dism_pkg_{pkg_id}", use_container_width=True):
+                        if st.button("Dismiss Package", key=f"btn_dism_pkg_{pkg_id}", use_container_width=True):
                             for rid in clubbed_rec_ids:
                                 st.session_state.approved_actions[rid] = False
                                 st.session_state.dismissed_actions[rid] = True
@@ -1364,7 +1364,7 @@ with tab_actions:
                             st.rerun()
                     with col_pkg3:
                         if is_pkg_approved:
-                            st.markdown("<span style='color: #2ECC71; font-weight: 600;'>✓ Unified Package Approved (All 4 Actions Synchronized)</span>", unsafe_allow_html=True)
+                            st.markdown("<span style='color: #2ECC71; font-weight: 600;'>Unified Package Approved (All 4 Actions Synchronized)</span>", unsafe_allow_html=True)
                         else:
                             st.markdown("<span style='color: #94A3B8; font-size: 0.85rem;'>Approve unified package to queue synchronized multi-trade briefing to Tab 4.</span>", unsafe_allow_html=True)
 
@@ -1373,7 +1373,7 @@ with tab_actions:
     # Cross-Specialist Strategic Optimizations (Master LLM Orchestrator)
     cross_specialist_optimizations = client_result.get("cross_specialist_optimizations", [])
     if cross_specialist_optimizations:
-        st.markdown("#### 🧠 Master Orchestrator Strategic Optimizations (Cross-Specialist Alpha)")
+        st.markdown("#### Master Orchestrator Strategic Optimizations (Cross-Specialist Alpha)")
         for opt in cross_specialist_optimizations:
             opt_id = opt.get("id", "")
             opt_title = html.escape(str(opt.get("title", "")))
@@ -1389,7 +1389,7 @@ with tab_actions:
             <div class="jb-rec-card" style="border: 1.5px solid rgba(85,239,196,0.5); background: linear-gradient(135deg, rgba(85,239,196,0.08) 0%, rgba(13,30,54,0.8) 100%); border-radius: 8px; padding: 1.15rem; margin-bottom: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <div>
-                        <span class="jb-badge" style="background: #00B894; color: #FFF; font-weight: 700;">🧠 Strategic Alpha</span>
+                        <span class="jb-badge" style="background: #00B894; color: #FFF; font-weight: 700;">Strategic Alpha</span>
                         {agent_badges}
                     </div>
                     <div style="font-size: 0.8rem; color: #55EFC4; font-family: monospace;">{opt_id}</div>
@@ -1397,29 +1397,29 @@ with tab_actions:
                 <div style="font-size: 1.05rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.3rem;">{opt_title}</div>
                 <div style="font-size: 0.88rem; color: #E2E8F0; margin-bottom: 0.6rem;">{opt_desc}</div>
                 <div style="display: flex; flex-direction: column; gap: 0.4rem; background: rgba(8,20,38,0.6); padding: 0.75rem; border-radius: 6px; font-size: 0.84rem;">
-                    <div><span style="color: #55EFC4; font-weight: 600;">💡 Expected Benefit:</span> <span style="color: #FFF;">{opt_saving}</span></div>
-                    <div><span style="color: #94A3B8; font-weight: 600;">🎯 Strategic Rationale:</span> <span style="color: #CBD5E1;">{opt_rat}</span></div>
+                    <div><span style="color: #55EFC4; font-weight: 600;">Expected Benefit:</span> <span style="color: #FFF;">{opt_saving}</span></div>
+                    <div><span style="color: #94A3B8; font-weight: 600;">Strategic Rationale:</span> <span style="color: #CBD5E1;">{opt_rat}</span></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
             if steps:
-                with st.expander(f"📋 View Execution Roadmap for {opt_title}"):
+                with st.expander(f"View Execution Roadmap for {opt_title}"):
                     for s in steps:
                         st.markdown(f"- {s}")
 
     # Cross-Agent Conflicts Surfacing
     if conflicts:
-        st.markdown("#### ⚡ Cross-Agent Tradeoffs & Conflict Resolution")
+        st.markdown("#### Cross-Agent Tradeoffs & Conflict Resolution")
         for conf in conflicts:
             conf_title = html.escape(str(conf.get("title", "")))
             conf_desc = html.escape(str(conf.get("description", "")))
             conf_tradeoff = html.escape(str(conf.get("tradeoff", "")))
             conf_res = html.escape(str(conf.get("recommended_resolution", "")))
-            conf_html = f"""<div class="jb-conflict-box"><div style="font-weight: 700; color: #FDCB6E; font-size: 0.95rem;">⚠️ Conflict Detected: {conf_title}</div><div style="font-size: 0.85rem; color: #E2E8F0; margin: 0.3rem 0;">{conf_desc}</div><div style="font-size: 0.82rem; color: #94A3B8;"><strong>Tradeoff:</strong> {conf_tradeoff}</div><div style="font-size: 0.82rem; color: #55EFC4; margin-top: 0.2rem;"><strong>Suggested RM Policy:</strong> {conf_res}</div></div>"""
+            conf_html = f"""<div class="jb-conflict-box"><div style="font-weight: 700; color: #FDCB6E; font-size: 0.95rem;">Conflict Detected: {conf_title}</div><div style="font-size: 0.85rem; color: #E2E8F0; margin: 0.3rem 0;">{conf_desc}</div><div style="font-size: 0.82rem; color: #94A3B8;"><strong>Tradeoff:</strong> {conf_tradeoff}</div><div style="font-size: 0.82rem; color: #55EFC4; margin-top: 0.2rem;"><strong>Suggested RM Policy:</strong> {conf_res}</div></div>"""
             st.markdown(conf_html, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("#### 🤖 Specialist Agent Recommendations")
+    st.markdown("#### Specialist Agent Recommendations")
 
     if not recs:
         st.success("All portfolio parameters, credit lines, and cash runways are currently optimal.")
@@ -1449,9 +1449,9 @@ with tab_actions:
             tier_class = "jb-badge-fact" if tier == "fact" else ("jb-badge-rule" if tier == "rule" else "jb-badge-model")
             border_color = "#2ECC71" if is_approved else ("#E74C3C" if is_dismissed else "#C5A880")
             status_badge = f'<span class="jb-badge jb-badge-high">Status: {html.escape(rec["compliance_status"].upper())}</span>' if rec["compliance_status"] != "pass" else ""
-            override_html = f'<div style="font-size: 0.82rem; color: #FDCB6E; margin-bottom: 0.4rem;">🔒 <em>{override_note}</em></div>' if override_note else ""
+            override_html = f'<div style="font-size: 0.82rem; color: #FDCB6E; margin-bottom: 0.4rem;"><em>{override_note}</em></div>' if override_note else ""
             horizon_val = rec.get("time_horizon")
-            horizon_badge = f'<span class="jb-badge" style="background: rgba(197, 168, 128, 0.2); border: 1px solid rgba(197, 168, 128, 0.4); color: #F5E6CC; font-weight: 600;">⏱️ Horizon: {html.escape(str(horizon_val))}</span>' if horizon_val else ""
+            horizon_badge = f'<span class="jb-badge" style="background: rgba(197, 168, 128, 0.2); border: 1px solid rgba(197, 168, 128, 0.4); color: #F5E6CC; font-weight: 600;">Horizon: {html.escape(str(horizon_val))}</span>' if horizon_val else ""
 
             with st.container():
                 rec_html = f"""<div class="jb-rec-card" style="border-left: 4px solid {border_color};"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;"><div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;"><span class="jb-badge {p_class}">{priority.upper()} Priority</span> <span class="jb-badge {tier_class}">Confidence: {tier.upper()}</span> <span class="jb-badge" style="background: rgba(255,255,255,0.1); color: #FFF;">Agent: {agent.upper()}</span> {horizon_badge} {status_badge}</div><div style="font-size: 0.8rem; color: #C5A880; font-family: monospace;">{rec_id}</div></div><div class="jb-rec-headline">{headline}</div><div style="font-size: 0.9rem; color: #E2E8F0; margin-bottom: 0.5rem;"><strong>Proposed Action:</strong> {recommendation_text}</div>{override_html}</div>"""
@@ -1460,7 +1460,7 @@ with tab_actions:
                 # Editable Client-Ready Talking Point
                 curr_tp = st.session_state.custom_talking_points.get(rec["id"], default_talking_point)
                 edited_tp = st.text_area(
-                    f"💬 Client-Ready Phrasing (Verbatim for RM)" + (" [Read-Only in Supervisory Audit Mode]" if is_read_only else ""),
+                    f"Client-Ready Phrasing (Verbatim for RM)" + (" [Read-Only in Supervisory Audit Mode]" if is_read_only else ""),
                     value=curr_tp,
                     key=f"tp_{prefix}_{rec['id']}",
                     height=70,
@@ -1470,7 +1470,7 @@ with tab_actions:
                     st.session_state.custom_talking_points[rec["id"]] = edited_tp
 
                 # 1-Click Evidence Audit Trail Drawer
-                with st.expander(f"🔍 1-Click Evidence Audit Trail ({len(evidence_items)} Facts Cited)"):
+                with st.expander(f"1-Click Evidence Audit Trail ({len(evidence_items)} Facts Cited)"):
                     for idx, ev in enumerate(evidence_items):
                         st.markdown(f"""
                         - **Source Pure Function:** `{ev.get('source_function')}`
@@ -1483,35 +1483,35 @@ with tab_actions:
                 if is_read_only:
                     st.markdown(f"""
                     <div style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15); border-radius: 6px; padding: 0.55rem 0.85rem; font-size: 0.82rem; color: #94A3B8;">
-                        🔒 <strong>Approval Locked:</strong> Read-only supervisory audit mode. Commercial action sign-off reserved for assigned RM (Priscilla Ong).
+                        <strong>Approval Locked:</strong> Read-only supervisory audit mode. Commercial action sign-off reserved for assigned RM (Priscilla Ong).
                     </div>
                     """, unsafe_allow_html=True)
                 else:
                     col_act1, col_act2, col_act3 = st.columns([2, 2, 4])
                     with col_act1:
-                        if st.button(f"✅ Approve Action", key=f"app_{prefix}_{rec['id']}", use_container_width=True):
+                        if st.button(f"Approve Action", key=f"app_{prefix}_{rec['id']}", use_container_width=True):
                             st.session_state.approved_actions[rec["id"]] = True
                             st.session_state.dismissed_actions[rec["id"]] = False
                             st.rerun()
                     with col_act2:
-                        if st.button(f"❌ Dismiss Action", key=f"dism_{prefix}_{rec['id']}", use_container_width=True):
+                        if st.button(f"Dismiss Action", key=f"dism_{prefix}_{rec['id']}", use_container_width=True):
                             st.session_state.dismissed_actions[rec["id"]] = True
                             st.session_state.approved_actions[rec["id"]] = False
                             st.rerun()
                     with col_act3:
                         if is_approved:
-                            st.markdown("<span style='color: #2ECC71; font-weight: 600;'>✓ Action Approved & Queued for Client Meeting Pack</span>", unsafe_allow_html=True)
+                            st.markdown("<span style='color: #2ECC71; font-weight: 600;'>Action Approved & Queued for Client Meeting Pack</span>", unsafe_allow_html=True)
                         elif is_dismissed:
-                            st.markdown("<span style='color: #E74C3C; font-weight: 600;'>✗ Action Dismissed by RM</span>", unsafe_allow_html=True)
+                            st.markdown("<span style='color: #E74C3C; font-weight: 600;'>Action Dismissed by RM</span>", unsafe_allow_html=True)
 
                 st.markdown("<hr style='border-color: rgba(255,255,255,0.08); margin: 1.25rem 0;'>", unsafe_allow_html=True)
 
         # Priority Sub-tabs
         p_tab_all, p_tab_high, p_tab_med, p_tab_low = st.tabs([
-            f"📑 All Actions ({len(recs)})",
-            f"🚨 High Priority ({len(high_recs)})",
-            f"⚖️ Medium Priority ({len(med_recs)})",
-            f"🌱 Low Priority ({len(low_recs)})"
+            f"All Actions ({len(recs)})",
+            f"High Priority ({len(high_recs)})",
+            f"Medium Priority ({len(med_recs)})",
+            f"Low Priority ({len(low_recs)})"
         ])
 
         with p_tab_all:
@@ -1545,7 +1545,7 @@ with tab_actions:
 with tab_pack:
     pack_top_c1, pack_top_c2 = st.columns([3, 1.5])
     with pack_top_c1:
-        st.markdown(f"### 📄 Client Meeting Brief & Governance Pack")
+        st.markdown(f"### Client Meeting Brief & Governance Pack")
         st.caption("Compiles RM-approved recommendations, multi-objective packages, and supervisory pre-clearance into client-ready briefings and internal audit dossiers.")
     with pack_top_c2:
         render_client_switcher("tab4")
@@ -1564,10 +1564,10 @@ with tab_pack:
         # ---------------------------------------------------------
         kyc_due = client.get("kyc_review_due", "2027-01-01")
         kyc_ok = kyc_due >= selected_snapshot
-        kyc_badge = "✅ Cleared" if kyc_ok else "⚠️ Review Due"
+        kyc_badge = "Cleared" if kyc_ok else "Review Due"
         kyc_color = "#55EFC4" if kyc_ok else "#FDCB6E"
 
-        st.markdown("#### 🛡️ 4-Point Supervisory Governance & Suitability Audit")
+        st.markdown("#### 4-Point Supervisory Governance & Suitability Audit")
         st.markdown(f"""
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
             <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(85,239,196,0.3); border-radius: 8px; padding: 0.75rem;">
@@ -1577,17 +1577,17 @@ with tab_pack:
             </div>
             <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(85,239,196,0.3); border-radius: 8px; padding: 0.75rem;">
                 <div style="font-size: 0.72rem; color: #55EFC4; font-weight: 700; text-transform: uppercase;">2. Mandate Suitability</div>
-                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">✅ Suitable Fit</div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">Suitable Fit</div>
                 <div style="font-size: 0.75rem; color: #94A3B8;">{client.get('risk_profile')} ({client.get('risk_tolerance_score', 'N/A')}/100)</div>
             </div>
             <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(85,239,196,0.3); border-radius: 8px; padding: 0.75rem;">
                 <div style="font-size: 0.72rem; color: #55EFC4; font-weight: 700; text-transform: uppercase;">3. Standing Exclusions</div>
-                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">✅ Validated</div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">Validated</div>
                 <div style="font-size: 0.75rem; color: #94A3B8;">0 exclusion violations</div>
             </div>
             <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(85,239,196,0.3); border-radius: 8px; padding: 0.75rem;">
                 <div style="font-size: 0.72rem; color: #55EFC4; font-weight: 700; text-transform: uppercase;">4. Cross-Border Fit</div>
-                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">✅ Compliant</div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: #FFF; margin-top: 0.2rem;">Compliant</div>
                 <div style="font-size: 0.75rem; color: #94A3B8;">{client.get('tax_domicile')} → {client.get('booking_centre')}</div>
             </div>
         </div>
@@ -1600,10 +1600,10 @@ with tab_pack:
         if is_read_only:
             e_col1, e_col2 = st.columns([3.2, 1.8])
             with e_col1:
-                endorse_status_html = '<span style="color: #2ECC71; font-weight: 700;">✓ SUPERVISORY ENDORSEMENT ACTIVE</span> — Certified for RM Client Delivery' if is_endorsed else '<span style="color: #FDCB6E; font-weight: 600;">⏳ Pending Desk Head Supervisory Endorsement</span>'
+                endorse_status_html = '<span style="color: #2ECC71; font-weight: 700;">SUPERVISORY ENDORSEMENT ACTIVE</span> — Certified for RM Client Delivery' if is_endorsed else '<span style="color: #FDCB6E; font-weight: 600;">Pending Desk Head Supervisory Endorsement</span>'
                 st.markdown(f"""
                 <div style="background: rgba(197, 168, 128, 0.08); border: 1px solid {'#2ECC71' if is_endorsed else 'rgba(197, 168, 128, 0.35)'}; border-radius: 8px; padding: 0.85rem 1.1rem; margin-bottom: 1.25rem;">
-                    <div style="font-size: 0.88rem; font-weight: 700; color: #C5A880; margin-bottom: 0.25rem;">✍️ Desk Head Supervisory Endorsement Authority</div>
+                    <div style="font-size: 0.88rem; font-weight: 700; color: #C5A880; margin-bottom: 0.25rem;">Desk Head Supervisory Endorsement Authority</div>
                     <div style="font-size: 0.82rem; color: #E2E8F0;">{endorse_status_html}</div>
                     <div style="font-size: 0.76rem; color: #94A3B8; margin-top: 0.2rem;">Governance Policy #PB-AUD-101 • Reviewing Officer: Marc Guggenheim (DH-SG-001)</div>
                 </div>
@@ -1611,20 +1611,20 @@ with tab_pack:
             with e_col2:
                 st.markdown("<div style='margin-top: 6px;'>", unsafe_allow_html=True)
                 if not is_endorsed:
-                    if st.button("✍️ Endorse Meeting Pack", key=f"btn_endorse_{target_cid}", use_container_width=True):
+                    if st.button("Endorse Meeting Pack", key=f"btn_endorse_{target_cid}", use_container_width=True):
                         st.session_state.desk_head_endorsements[target_cid] = True
                         st.rerun()
                 else:
-                    if st.button("↩️ Revoke Endorsement", key=f"btn_revoke_{target_cid}", use_container_width=True):
+                    if st.button("Revoke Endorsement", key=f"btn_revoke_{target_cid}", use_container_width=True):
                         st.session_state.desk_head_endorsements[target_cid] = False
                         st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
         approved_recs = [r for r in recs if st.session_state.approved_actions.get(r["id"], False)]
         if approved_recs:
-            st.success(f"✅ **{len(approved_recs)} RM-Approved Action(s) Included** in this client communication.")
+            st.success(f"**{len(approved_recs)} RM-Approved Action(s) Included** in this client communication.")
         else:
-            st.info("ℹ️ **Draft Preview Mode:** No actions explicitly approved yet in Tab 3 (Agent Action Deck). Showing default high-priority actions. Approve any recommendation in Tab 3 to include it.")
+            st.info("**Draft Preview Mode:** No actions explicitly approved yet in Tab 3 (Agent Action Deck). Showing default high-priority actions. Approve any recommendation in Tab 3 to include it.")
             approved_recs = [r for r in recs if r["priority"] == "high"][:2]
 
         # Check for approved comingling packages
@@ -1645,7 +1645,7 @@ with tab_pack:
         endorsement_stamp = ""
         if is_endorsed:
             endorsement_stamp = f"""================================================================================
-🏛️ BANK JULIUS BAER — SUPERVISORY DESK HEAD COMPLIANCE ENDORSEMENT
+BANK JULIUS BAER — SUPERVISORY DESK HEAD COMPLIANCE ENDORSEMENT
 ================================================================================
 Status: SUPERVISORY PRE-CLEARANCE GRANTED & SUITABILITY ENDORSED
 Reviewing Officer: Marc Guggenheim (DH-SG-001 — Supervisory Desk Head)
@@ -1727,7 +1727,7 @@ We have outlined key strategic recommendations for your review below:
                     pkg_tp = st.session_state.custom_talking_points.get(pkg["id"], pkg["unified_talking_point"])
                     pkg_horiz = f"\n- **Execution Horizon:** {pkg['time_horizon']}" if pkg.get("time_horizon") else ""
                     pack_content += f"""
-**★ Unified Strategic Action Package: {pkg['title']}**
+**Unified Strategic Action Package: {pkg['title']}**
 {pkg['summary']}
 - **Action Plan:** {pkg['unified_action']}{pkg_horiz}
 - **Key Client Benefit:** {pkg_tp}
@@ -1849,7 +1849,7 @@ Bank Julius Baer & Co. Ltd.
         
         file_suffix = "AuditDossier" if meeting_format == "Internal Supervisory Audit Dossier & Risk Memo" else "Brief"
         st.download_button(
-            label=f"💾 Download {meeting_format} (.md / .txt)",
+            label=f"Download {meeting_format} (.md / .txt)",
             data=pack_content,
             file_name=f"JuliusBaer_{file_suffix}_{client['client_id']}_{selected_snapshot}.txt",
             mime="text/plain"
@@ -1859,7 +1859,7 @@ Bank Julius Baer & Co. Ltd.
 # TAB 5: SEMANTIC KNOWLEDGE NAVIGATOR
 # ---------------------------------------------------------
 with tab_vector:
-    st.markdown("### 🧠 Semantic Knowledge Navigator")
+    st.markdown("### Semantic Knowledge Navigator")
     st.caption("Vector similarity search across unstructured RM meeting logs, world market shock events, and mandate compliance clauses.")
 
     v_col1, v_col2 = st.columns([3, 1])
@@ -1871,7 +1871,7 @@ with tab_vector:
     if v_query:
         if v_target == "RM Meeting Notes":
             results = vector_store.search_rm_notes(v_query, n_results=4)
-            st.markdown(f"#### 🔍 RM Notes Semantic Matches ({len(results)} found)")
+            st.markdown(f"#### RM Notes Semantic Matches ({len(results)} found)")
             for r in results:
                 st.markdown(f"""
                 <div class="jb-client-card">
@@ -1884,7 +1884,7 @@ with tab_vector:
                 """, unsafe_allow_html=True)
         else:
             results = vector_store.search_events(v_query, n_results=4)
-            st.markdown(f"#### 🔍 Market Shock Events Matches ({len(results)} found)")
+            st.markdown(f"#### Market Shock Events Matches ({len(results)} found)")
             for r in results:
                 st.markdown(f"""
                 <div class="jb-client-card">

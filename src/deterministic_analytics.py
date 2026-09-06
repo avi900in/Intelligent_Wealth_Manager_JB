@@ -977,7 +977,7 @@ class DeterministicAnalytics:
                         "margin_call_pct": fac.get("margin_call_ltv_pct", 0.0),
                         "buffer_pct": fac.get("buffer_to_margin_call_pct", 0.0),
                         "headroom_usd": fac.get("headroom", 0.0),
-                        "severity": "🚨 CRITICAL (<2% Buffer)" if fac.get("is_critical") else "⚠️ WARNING (<5% Buffer)"
+                        "severity": "CRITICAL (<2% Buffer)" if fac.get("is_critical") else "WARNING (<5% Buffer)"
                     })
         return sorted(alerts, key=lambda x: x["buffer_pct"])
 
@@ -1007,13 +1007,13 @@ class DeterministicAnalytics:
 
             # Severity label
             if liq["has_shortfall"]:
-                severity = "🚨 SHORTFALL (Deficit)"
+                severity = "SHORTFALL (Deficit)"
             elif liq["coverage_ratio"] < 1.3:
-                severity = "⚠️ TIGHT BUFFER (<1.3x)"
+                severity = "TIGHT BUFFER (<1.3x)"
             elif liq["coverage_ratio"] < 2.0:
-                severity = "🟡 WATCHLIST (<2.0x)"
+                severity = "WATCHLIST (<2.0x)"
             else:
-                severity = "✅ ADEQUATE (>2.0x)"
+                severity = "ADEQUATE (>2.0x)"
 
             if liq["total_outflows_expected_usd"] > 0 or liq["has_shortfall"]:
                 records.append({

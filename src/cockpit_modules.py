@@ -16,7 +16,7 @@ def render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot: st
     st.markdown("""
     <div style="background: linear-gradient(135deg, rgba(12, 26, 48, 0.95), rgba(20, 42, 74, 0.95)); border: 1px solid rgba(197, 160, 89, 0.3); border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.75rem;">
         <div style="font-size: 0.8rem; color: #C5A059; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">JB Pulse • Macro Scenario Simulation Lab</div>
-        <h2 style="color: #FFFFFF; margin: 0.25rem 0 0.5rem 0; font-size: 1.8rem;">🧪 Portfolio Stress Testing Lab</h2>
+        <h2 style="color: #FFFFFF; margin: 0.25rem 0 0.5rem 0; font-size: 1.8rem;">Portfolio Stress Testing Lab</h2>
         <div style="color: #94A3B8; font-size: 0.95rem; max-width: 850px;">
             Simulate instantaneous market shocks, geopolitical escalations, and monetary policy shifts. 
             Evaluate impact on portfolio valuations, Lombard facility LTV headroom, and automatic margin call triggers.
@@ -30,7 +30,7 @@ def render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot: st
     col_l, col_r = st.columns([1.2, 2.8], gap="large")
 
     with col_l:
-        st.markdown("### 🎛️ Scenario Parameters")
+        st.markdown("### Scenario Parameters")
         target_mode = st.radio("Simulation Scope", ["Single Client Portfolio", "Whole Asia Book (20 Clients)"], horizontal=True)
         
         target_client_id = "CL-0001"
@@ -100,7 +100,7 @@ def render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot: st
             asian_fx = 6.0
             eur_fx = -2.0
         else:
-            st.markdown("#### 🛢️ 1. Sectoral & Commodity Shocks")
+            st.markdown("#### 1. Sectoral & Commodity Shocks")
             s_col1, s_col2 = st.columns(2)
             with s_col1:
                 oil_shock = st.slider("Brent Crude Shock (%)", -50.0, 50.0, 15.0, 5.0, help="Simulates global oil price shocks affecting energy producers and transport.")
@@ -109,14 +109,14 @@ def render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot: st
                 tech_shock = st.slider("Tech & High-Beta Growth (%)", -40.0, 30.0, -10.0, 2.5, help="Simulates AI capex drawdown and semiconductor valuation shifts.")
                 eq_shock = st.slider("Broad Equities Shock (%)", -30.0, 30.0, -8.0, 2.0, help="Simulates general developed and emerging market equity indices.")
 
-            st.markdown("#### 📈 2. Interest Rate Risk")
+            st.markdown("#### 2. Interest Rate Risk")
             r_col1, r_col2 = st.columns(2)
             with r_col1:
                 rate_shock = st.slider("10Y Treasury Yield Shift (bps)", -150, 250, 50, 10, help="Applies duration sensitivity formula to fixed income holdings.")
             with r_col2:
                 spread_shock = st.slider("Credit Spread Widening (bps)", 0, 300, 40, 10, help="Simulates investment grade and high yield credit spread blowout.")
 
-            st.markdown("#### 💱 3. Exchange Rate Risk (FX)")
+            st.markdown("#### 3. Exchange Rate Risk (FX)")
             f_col1, f_col2 = st.columns(2)
             with f_col1:
                 jpy_fx = st.slider("USD / JPY Shift (%)", -25.0, 25.0, -10.0, 2.5, help="Negative indicates JPY Yen appreciation (carry trade unwind risk).")
@@ -124,10 +124,10 @@ def render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot: st
                 asian_fx = st.slider("USD / Asian FX (SGD, HKD, CNH) (%)", -15.0, 15.0, 2.0, 1.0, help="Positive indicates USD strengthening against Asian currencies.")
             eur_fx = st.slider("EUR & CHF vs USD (%)", -15.0, 15.0, -3.0, 1.0, help="Simulates European & Swiss currency shifts against the Dollar.")
 
-        run_sim = st.button("🚀 Run Scenario Stress Test", use_container_width=True, type="primary")
+        run_sim = st.button("Run Scenario Stress Test", use_container_width=True, type="primary")
 
     with col_r:
-        st.markdown("### 📊 Simulated Shock Impact & Resilience Matrix")
+        st.markdown("### Simulated Shock Impact & Resilience Matrix")
         
         def calculate_client_sim(cid: str):
             holdings = repo.get_all_holdings_for_client(cid, selected_snapshot)
@@ -221,13 +221,13 @@ def render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot: st
                 st.metric("Stress LTV", f"{res['sim_ltv']:.1f}%", f"{ltv_diff:+.1f}%", delta_color="inverse")
 
             if res['sim_ltv'] >= 70.0:
-                st.error(f"🚨 **CRITICAL MARGIN CALL TRIGGERED**: Under this scenario, Lombard Facility LTV breaches the 70.0% liquidation barrier (Simulated LTV: **{res['sim_ltv']:.1f}%**). Collateral deficit of **${(res['curr_drawn']/0.7 - res['sim_collat'])/1e6:.2f}M** requires immediate cash deposit or asset sale.")
+                st.error(f"**CRITICAL MARGIN CALL TRIGGERED**: Under this scenario, Lombard Facility LTV breaches the 70.0% liquidation barrier (Simulated LTV: **{res['sim_ltv']:.1f}%**). Collateral deficit of **${(res['curr_drawn']/0.7 - res['sim_collat'])/1e6:.2f}M** requires immediate cash deposit or asset sale.")
             elif res['sim_ltv'] >= 65.0:
-                st.warning(f"⚠️ **ELEVATED MARGIN RISK**: LTV rises to **{res['sim_ltv']:.1f}%**, leaving under 5% buffer to margin call threshold. Recommend pre-hedging or pledging additional unencumbered assets.")
+                st.warning(f"**ELEVATED MARGIN RISK**: LTV rises to **{res['sim_ltv']:.1f}%**, leaving under 5% buffer to margin call threshold. Recommend pre-hedging or pledging additional unencumbered assets.")
             else:
-                st.success(f"✅ **LOMBARD LTV RESILIENT**: Stress LTV (**{res['sim_ltv']:.1f}%**) remains well within safe lending parameters (>10% buffer to margin call).")
+                st.success(f"**LOMBARD LTV RESILIENT**: Stress LTV (**{res['sim_ltv']:.1f}%**) remains well within safe lending parameters (>10% buffer to margin call).")
 
-            st.markdown("#### 🔬 Risk Factor Decomposition (Attribution of P&L Delta)")
+            st.markdown("#### Risk Factor Decomposition (Attribution of P&L Delta)")
             sb_cols = st.columns(4)
             for i, (fname, fval) in enumerate(res["sec_breakdown"].items()):
                 with sb_cols[i % 4]:
@@ -239,7 +239,7 @@ def render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot: st
                     </div>
                     """, unsafe_allow_html=True)
 
-            st.markdown("#### 🛡️ AI Proactive Hedging & Protection Blueprint")
+            st.markdown("#### Proactive Hedging & Protection Blueprint")
             st.markdown(f"""
             <div style="background: rgba(12, 26, 48, 0.7); border: 1px solid rgba(197, 160, 89, 0.25); border-radius: 8px; padding: 1.25rem; font-size: 0.9rem; line-height: 1.6;">
                 <strong>Scenario Attribution Analysis:</strong><br>
@@ -270,13 +270,13 @@ def render_stress_testing_lab(repo, analytics, llm_engine, selected_snapshot: st
                 st.metric("Elevated LTV Risks", f"{len(elevated_clients)} Clients")
 
             if critical_clients:
-                st.error(f"🚨 **BOOK-LEVEL MARGIN CALL WARNING**: {len(critical_clients)} client(s) ({', '.join(c['client_id'] for c in critical_clients)}) breach the 70% Lombard LTV liquidation barrier under this shock scenario.")
+                st.error(f"**BOOK-LEVEL MARGIN CALL WARNING**: {len(critical_clients)} client(s) ({', '.join(c['client_id'] for c in critical_clients)}) breach the 70% Lombard LTV liquidation barrier under this shock scenario.")
 
-            st.markdown("#### 📋 Client-by-Client Shock Impact Table")
+            st.markdown("#### Client-by-Client Shock Impact Table")
             book_table = []
             for r in all_res:
                 c_info = next(c for c in clients if c["client_id"] == r["client_id"])
-                status = "🚨 Margin Call" if r["sim_ltv"] >= 70.0 else ("⚠️ Elevated Risk" if r["sim_ltv"] >= 65.0 else "✅ Normal")
+                status = "Margin Call" if r["sim_ltv"] >= 70.0 else ("Elevated Risk" if r["sim_ltv"] >= 65.0 else "Normal")
                 book_table.append({
                     "Client ID": r["client_id"],
                     "Client Name": c_info["client_name"],
@@ -296,7 +296,7 @@ def render_trigger_conversation_engine(repo, analytics, llm_engine, selected_sna
     st.markdown("""
     <div style="background: linear-gradient(135deg, rgba(12, 26, 48, 0.95), rgba(20, 42, 74, 0.95)); border: 1px solid rgba(197, 160, 89, 0.3); border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.75rem;">
         <div style="font-size: 0.8rem; color: #C5A059; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">JB Pulse • Conversational Advisory Outreach</div>
-        <h2 style="color: #FFFFFF; margin: 0.25rem 0 0.5rem 0; font-size: 1.8rem;">💬 Trigger-to-Conversation Engine</h2>
+        <h2 style="color: #FFFFFF; margin: 0.25rem 0 0.5rem 0; font-size: 1.8rem;">Trigger-to-Conversation Engine</h2>
         <div style="color: #94A3B8; font-size: 0.95rem; max-width: 850px;">
             Converts breaking market events, central bank actions, and geopolitical shifts into bespoke, client-ready advisory scripts, WhatsApp messages, and formal email drafts tailored to each client's specific holdings.
         </div>
@@ -327,10 +327,10 @@ def render_trigger_conversation_engine(repo, analytics, llm_engine, selected_sna
         comm_channel = st.selectbox(
             "Communication Channel & Format",
             options=[
-                "📱 WhatsApp / Signal Direct Message (Concise & Urgent)",
-                "✉️ Formal Relationship Manager Email (Comprehensive Briefing)",
-                "📞 Phone Call Script with Objection Handling",
-                "📄 1-Page PDF Briefing Note"
+                "WhatsApp / Signal Direct Message (Concise & Urgent)",
+                "Formal Relationship Manager Email (Comprehensive Briefing)",
+                "Phone Call Script with Objection Handling",
+                "1-Page PDF Briefing Note"
             ]
         )
 
@@ -343,7 +343,7 @@ def render_trigger_conversation_engine(repo, analytics, llm_engine, selected_sna
     ev_type = active_event.get("event_type", "")
     ev_date = active_event.get("event_date", "")
 
-    st.markdown(f"### 📝 Generated Client Outreach ({active_client['client_name']} • {comm_channel.split()[1]})")
+    st.markdown(f"### Generated Client Outreach ({active_client['client_name']} • {comm_channel.split()[0]})")
 
     if "WhatsApp" in comm_channel:
         msg_text = f"""Good morning {client_name.split()[0]},
@@ -405,13 +405,13 @@ RM Response: "I completely respect that, {client_name.split()[0]}. We are not pr
     
     b1, b2, b3 = st.columns([1, 1, 2])
     with b1:
-        if st.button("📋 Copy to Clipboard", use_container_width=True):
-            st.success("Draft copied to clipboard!")
+        if st.button("Copy to Clipboard", use_container_width=True):
+            st.success("Draft copied to clipboard.")
     with b2:
-        if st.button("💾 Log to CRM Notes", use_container_width=True):
+        if st.button("Log to CRM Notes", use_container_width=True):
             st.success("Activity logged to Priscilla Ong's CRM interaction history.")
     with b3:
-        st.caption("🔒 Verified against Julius Baer Client Communication & Suitability Guidelines (PB-COM-2026).")
+        st.caption("Verified against Julius Baer Client Communication & Suitability Guidelines (PB-COM-2026).")
 
 
 def render_client_digital_twin(repo, analytics, llm_engine, selected_snapshot: str):
@@ -419,7 +419,7 @@ def render_client_digital_twin(repo, analytics, llm_engine, selected_snapshot: s
     st.markdown("""
     <div style="background: linear-gradient(135deg, rgba(12, 26, 48, 0.95), rgba(20, 42, 74, 0.95)); border: 1px solid rgba(197, 160, 89, 0.3); border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.75rem;">
         <div style="font-size: 0.8rem; color: #C5A059; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">JB Pulse • Behavioral Persona & Twin Simulation</div>
-        <h2 style="color: #FFFFFF; margin: 0.25rem 0 0.5rem 0; font-size: 1.8rem;">👤 Client Digital Twin</h2>
+        <h2 style="color: #FFFFFF; margin: 0.25rem 0 0.5rem 0; font-size: 1.8rem;">Client Digital Twin</h2>
         <div style="color: #94A3B8; font-size: 0.95rem; max-width: 850px;">
             Simulate how your client thinks, evaluates risk, and responds to market volatility. 
             Calibrated against historical CRM notes, life-stage milestones, wealth objectives, and behavioral finance archetypes.
@@ -431,7 +431,7 @@ def render_client_digital_twin(repo, analytics, llm_engine, selected_snapshot: s
     col1, col2 = st.columns([1.2, 2.8], gap="large")
 
     with col1:
-        st.markdown("### 🧬 Twin Archetype Selector")
+        st.markdown("### Twin Archetype Selector")
         cid = st.selectbox(
             "Select Client Persona",
             options=[c["client_id"] for c in clients],
@@ -455,14 +455,14 @@ def render_client_digital_twin(repo, analytics, llm_engine, selected_snapshot: s
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("#### 🧠 Behavioral Radar")
+        st.markdown("#### Behavioral Radar")
         st.slider("Loss Aversion Sensitivity", 0, 10, 8 if cid in ["CL-0001", "CL-0012"] else 4, disabled=True)
         st.slider("Liquidity Horizon Anxiety", 0, 10, 9 if cid in ["CL-0002", "CL-0015"] else 5, disabled=True)
         st.slider("Home Country / Sector Bias", 0, 10, 8 if cid in ["CL-0001", "CL-0004"] else 3, disabled=True)
         st.slider("Next-Gen Succession Priority", 0, 10, 9 if cid in ["CL-0007", "CL-0017"] else 4, disabled=True)
 
     with col2:
-        st.markdown("### 💬 Interactive Twin Sandbox: 'Interview the Client'")
+        st.markdown("### Interactive Twin Sandbox: 'Interview the Client'")
         st.caption("Ask your client's digital twin how they feel about potential rebalancing trades, liquidity requests, or market downturns.")
 
         prompt_suggestions = [
@@ -476,8 +476,8 @@ def render_client_digital_twin(repo, analytics, llm_engine, selected_snapshot: s
 
         custom_q = st.text_input("Or Ask a Custom Question to the Digital Twin:", value=selected_prompt)
 
-        if st.button("🗣️ Simulate Twin Reaction", type="primary"):
-            st.markdown("#### 👤 Digital Twin Response Simulation")
+        if st.button("Simulate Twin Reaction", type="primary"):
+            st.markdown("#### Digital Twin Response Simulation")
             
             if cid == "CL-0012": # Cheung Kwok Wing
                 response_text = f"""\"Look Priscilla, I appreciate that you're watching the markets, but let me be very clear: I worked 40 years to build this capital and I am not in the business of locking in a $5.6M loss on Swiss and European bonds. 
@@ -500,8 +500,8 @@ Since Hong Kong doesn't tax capital gains, let's harvest some of our liquid tech
             </div>
             """, unsafe_allow_html=True)
 
-            st.markdown("#### 🎯 RM Advisory Strategy Recommendation")
-            st.info(f"💡 **Psychological Guidance for Priscilla**: The client exhibits high loss aversion. Frame recommendations as **'Cashflow Optimization & Headroom Guarantee'** rather than 'Cutting Losses'. Emphasize the math: holding a 2045 maturity for 19 years at a 2.1% coupon yields far less total wealth than switching into short 5.1% Treasury ladders.")
+            st.markdown("#### RM Advisory Strategy Recommendation")
+            st.info(f"**Psychological Guidance for Priscilla**: The client exhibits high loss aversion. Frame recommendations as **'Cashflow Optimization & Headroom Guarantee'** rather than 'Cutting Losses'. Emphasize the math: holding a 2045 maturity for 19 years at a 2.1% coupon yields far less total wealth than switching into short 5.1% Treasury ladders.")
 
 
 def render_explainable_ai(repo, analytics, llm_engine, selected_snapshot: str):
@@ -509,7 +509,7 @@ def render_explainable_ai(repo, analytics, llm_engine, selected_snapshot: str):
     st.markdown("""
     <div style="background: linear-gradient(135deg, rgba(12, 26, 48, 0.95), rgba(20, 42, 74, 0.95)); border: 1px solid rgba(197, 160, 89, 0.3); border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.75rem;">
         <div style="font-size: 0.8rem; color: #C5A059; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">JB Pulse • Transparent Intelligence & Traceability</div>
-        <h2 style="color: #FFFFFF; margin: 0.25rem 0 0.5rem 0; font-size: 1.8rem;">🔍 Explainable AI & Audit Matrix</h2>
+        <h2 style="color: #FFFFFF; margin: 0.25rem 0 0.5rem 0; font-size: 1.8rem;">Explainable AI & Audit Matrix</h2>
         <div style="color: #94A3B8; font-size: 0.95rem; max-width: 850px;">
             Every single recommendation generated by the Multi-Agent Swarm is 100% auditable. 
             Inspect the exact mathematical formulas, data rows, mandate constraints, and deterministic checks that governed the decision tree.
@@ -524,10 +524,10 @@ def render_explainable_ai(repo, analytics, llm_engine, selected_snapshot: str):
         format_func=lambda c: f"{c} — {next(x['client_name'] for x in clients if x['client_id'] == c)}"
     )
 
-    t1, t2, t3 = st.tabs(["🌳 Agent Decision Tree", "📐 Deterministic Math Traceability", "📜 event_log.csv Audit Grounding"])
+    t1, t2, t3 = st.tabs(["Agent Decision Tree", "Deterministic Math Traceability", "event_log.csv Audit Grounding"])
 
     with t1:
-        st.markdown("### 🤖 Multi-Agent Orchestration Flowchart")
+        st.markdown("### Multi-Agent Orchestration Flowchart")
         st.markdown("""
         ```text
         [Raw Client & Market Data (holdings.csv, event_log.csv, credit_facilities.csv)]
@@ -542,13 +542,13 @@ def render_explainable_ai(repo, analytics, llm_engine, selected_snapshot: str):
                    └────────────────────┬────────────────────┘
                                         │ (Pure Tool Facts Payload)
                                         ▼
-             ┌────────────────────────────────────────────────────────┐
-             │            Specialist Multi-Agent Swarm                │
-             │  • Mandate Agent: Validates SAA constraints            │
-             │  • Market Impact Agent: Maps event_log.csv shock lines │
-             │  • Tax & Wealth Agent: Evaluates Domicile Rules        │
-             │  • Rebalancing Agent: Computes precise order tickets   │
-             └──────────────────────────┬─────────────────────────────┘
+              ┌────────────────────────────────────────────────────────┐
+              │            Specialist Multi-Agent Swarm                │
+              │  • Mandate Agent: Validates SAA constraints            │
+              │  • Market Impact Agent: Maps event_log.csv shock lines │
+              │  • Tax & Wealth Agent: Evaluates Domicile Rules        │
+              │  • Rebalancing Agent: Computes precise order tickets   │
+              └──────────────────────────┬─────────────────────────────┘
                                         │
                                         ▼
                    ┌─────────────────────────────────────────┐
@@ -567,7 +567,7 @@ def render_explainable_ai(repo, analytics, llm_engine, selected_snapshot: str):
         """)
 
     with t2:
-        st.markdown("### 📐 Exact Mathematical Proofs for Client")
+        st.markdown("### Exact Mathematical Proofs for Client")
         drift = analytics.compute_drift("PF-0001", selected_snapshot)
         ltv = analytics.compute_ltv(cid, selected_snapshot)
         liq = analytics.compute_liquidity_runway(cid, selected_snapshot)
@@ -590,7 +590,7 @@ Margin Call Threshold = 70.0%
 Current Buffer = {max(0.0, 70.0 - ltv.get('aggregate_ltv_pct', 0.0)):.2f}%""", language="yaml")
 
     with t3:
-        st.markdown("### 📜 Authoritative 2026 Event Grounding Verification")
+        st.markdown("### Authoritative 2026 Event Grounding Verification")
         st.caption("Verifies that all AI-generated explanations are strictly grounded in event_log.csv rather than unconstrained LLM memory.")
         
         events_matched = analytics.match_events_to_holdings(cid, selected_snapshot)

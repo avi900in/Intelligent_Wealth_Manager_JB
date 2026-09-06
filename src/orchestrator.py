@@ -479,7 +479,7 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                     talking_point_parts.append(f"trimming liquid positions in {liquid_label} to restore mandate adherence")
                     for t in liquid_trim_recs:
                         clean_lbl = t.headline.split(":")[1].split("represents")[0].strip() if (":" in t.headline and "represents" in t.headline) else t.headline
-                        benefits.append(f"🛡️ **Mandate Governance ({clean_lbl}):** {t.recommendation}")
+                        benefits.append(f"**Mandate Governance ({clean_lbl}):** {t.recommendation}")
 
                 if conflicted_targets:
                     conflicted_label = ", ".join(conflicted_targets)
@@ -491,7 +491,7 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                         action_bullets.append(f"{idx}. **Reconcile Standing Constraint ({conflicted_label}):** {res_text}")
                         idx += 1
                     talking_point_parts.append(f"honoring your standing mandate to preserve {conflicted_label} under a documented suitability waiver")
-                    benefits.append(f"⚖️ **Conflict Reconciliation ({conflicted_label}):** Preserves strategic/legacy holdings without forced selling, achieving compliance via surrounding liquid sleeves.")
+                    benefits.append(f"**Conflict Reconciliation ({conflicted_label}):** Preserves strategic/legacy holdings without forced selling, achieving compliance via surrounding liquid sleeves.")
 
                 if main_tax:
                     title_parts.append("Tax-Loss Shield")
@@ -499,7 +499,7 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                     action_bullets.append(f"{idx}. **Harvest Tax Losses:** {main_tax.recommendation}")
                     idx += 1
                     talking_point_parts.append("simultaneously harvesting available tax losses to neutralize capital gains tax friction")
-                    benefits.append(f"📉 **Tax Optimization:** {main_tax.recommendation}")
+                    benefits.append(f"**Tax Optimization:** {main_tax.recommendation}")
 
                 if main_life:
                     title_parts.append("Milestone Ring-Fencing")
@@ -507,7 +507,7 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                     action_bullets.append(f"{idx}. **Pre-Fund Life Milestone:** {main_life.recommendation}")
                     idx += 1
                     talking_point_parts.append(f"pre-funding your upcoming liquidity milestone ({main_life.headline})")
-                    benefits.append(f"🏡 **Milestone Coverage:** {main_life.recommendation}")
+                    benefits.append(f"**Milestone Coverage:** {main_life.recommendation}")
 
                 if main_cash:
                     title_parts.append("Cash Reserve Fortification")
@@ -515,7 +515,7 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                     action_bullets.append(f"{idx}. **Fortify Cash Reserves:** {main_cash.recommendation}")
                     idx += 1
                     talking_point_parts.append("reinforcing your Cash & Equivalents buffer safely above mandate minimums")
-                    benefits.append(f"💧 **Liquidity Fortification:** {main_cash.recommendation}")
+                    benefits.append(f"**Liquidity Fortification:** {main_cash.recommendation}")
 
                 reconciled_conflict_titles = [c["title"] for c in conflicts] if conflicts else []
 
@@ -523,13 +523,14 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                 summary = f"Synergistic execution package clubbing {len(clubbed_items)} specialist actions: " + ", ".join(summary_parts) + "."
                 unified_action = "\n".join(action_bullets)
                 unified_talking_point = (
-                    f"Rather than addressing your portfolio adjustments piecemeal, we have structured a unified multi-objective execution package: "
-                    + ", ".join(talking_point_parts) + "."
+                    f"Good morning {context['client_name'].split()[0]}, we have engineered a coordinated multi-objective strategy for your portfolios: "
+                    + ", ".join(talking_point_parts)
+                    + ". This synchronized approach achieves regulatory adherence while preventing tax drag and cash shortages."
                 )
-                financial_benefits = benefits
+                financial_benefits = "\n".join(benefits)
 
                 opportunities.append({
-                    "id": f"PKG-SYN-{context['client_id']}-01",
+                    "id": f"PKG-COMINGLE-{context['client_id']}",
                     "title": title,
                     "opportunity_type": "multi_objective_tax_liquidity_rebalance",
                     "client_id": context["client_id"],
@@ -542,8 +543,6 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                     "conflicts_reconciled": reconciled_conflict_titles,
                     "time_horizon": "Synchronized Execution: 30-Day Window"
                 })
-
-        return opportunities
 
         return opportunities
 
@@ -649,9 +648,9 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
 
         if pep_status == "Yes":
             flags.append({
-                "type": "PEP_CLIENT",
+                "type": "PEP_STATUS",
                 "severity": "high",
-                "message": "Politically Exposed Person (PEP) protocol active. Enhanced transaction monitoring applies to all proposed trades."
+                "message": "Client is designated Politically Exposed Person (PEP). Enhanced due diligence and supervisory Desk Head co-sign required."
             })
 
         return flags
@@ -666,10 +665,10 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
         ltv_data = self.analytics.compute_ltv(context["client_id"], snapshot_date)
         if ltv_data.get("has_critical_warning"):
             credit_points = 45.0
-            credit_detail = "🚨 Critical Margin Call Warning"
+            credit_detail = "Critical Margin Call Warning"
         elif ltv_data.get("margin_call_warnings"):
             credit_points = 30.0
-            credit_detail = "⚠️ LTV Margin Call Watch"
+            credit_detail = "LTV Margin Call Watch"
 
         # Liquidity crunch
         liquidity_points = 0.0
@@ -677,10 +676,10 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
         runway = self.analytics.compute_liquidity_runway(context["client_id"], snapshot_date)
         if runway.get("urgency") == "CRITICAL":
             liquidity_points = 35.0
-            liquidity_detail = "💧 Critical Cash Deficit (<3mo)"
+            liquidity_detail = "Critical Cash Deficit (<3mo)"
         elif runway.get("urgency") == "HIGH":
             liquidity_points = 20.0
-            liquidity_detail = "💧 High Cash Deficit (<6mo)"
+            liquidity_detail = "High Cash Deficit (<6mo)"
 
         # Mandate Breaches
         mandate_points = 0.0
@@ -691,12 +690,12 @@ Perform master orchestration, cross-agent deduplication, comingling package synt
                 mandate_breaches_count += len(drift.get("breaches", []))
         if mandate_breaches_count > 0:
             mandate_points = 15.0 * mandate_breaches_count
-        mandate_detail = f"⚖️ {mandate_breaches_count} Mandate Breach(es)" if mandate_breaches_count > 0 else None
+        mandate_detail = f"{mandate_breaches_count} Mandate Breach(es)" if mandate_breaches_count > 0 else None
 
         # High priority recommendations
         high_recs = [r for r in recs if r.priority == "high"]
         high_actions_points = min(len(high_recs) * 5.0, 20.0)
-        high_actions_detail = f"⚡ {len(high_recs)} High Priority Action(s)" if high_recs else None
+        high_actions_detail = f"{len(high_recs)} High Priority Action(s)" if high_recs else None
 
         raw_total = base_score + credit_points + liquidity_points + mandate_points + high_actions_points
         final_score = min(round(raw_total, 1), 100.0)

@@ -336,7 +336,6 @@ def render_jb_header(rm_name: str = "Priscilla Ong", rm_id: str = "RM-SG-014", d
     <div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
             <div style="background: rgba(197, 168, 128, 0.15); border: 1px solid #C5A880; border-radius: 6px; padding: 0.35rem 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span style="font-size: 1rem;">👤</span>
                 <div>
                     <div style="font-size: 0.92rem; font-weight: 700; color: #FFFFFF; letter-spacing: 0.02em;">{rm_name}</div>
                     <div style="font-size: 0.7rem; color: #C5A880; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">{rm_id} • Senior Relationship Manager</div>

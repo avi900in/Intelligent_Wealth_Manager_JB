@@ -14,4 +14,5 @@ enableXsrfProtection = false
 gatherUsageStats = false
 
 [client]
-toolbarMode = "minimal"
+toolbarMode = "developer"
+
